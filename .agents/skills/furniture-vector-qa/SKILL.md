@@ -77,15 +77,29 @@ Todo cambio futuro al motor de visión (`src/core/vision/bandDetector.ts`) DEBE 
 
 ---
 
-## 4. Protocolo Obligatorio de QA Anti-Regresión y Rollback Seguro en Git
+## 4. Arquitectura POO Reutilizable y Modelo de Aprendizaje Local (6.º Agente OFG)
 
-**NUNCA** commitear cambios en `src/core/vision/`, `src/core/mathEngine/`, `src/core/cuttingStock/` o `src/core/vectorBlueprint/` sin pasar **LAS 5 COMPUERTAS** en verde:
+Esta Skill rige oficialmente al 6.º agente registrado en la OFG (**`AGENTE_VISION_VECTORIZACION`**, ver `OFG/config/agents/agente_vision_vectorizacion.py` y `OFG/config/agents_registry.json`), implementado como librería **POO SOLID 100 % offline y reutilizable** en `src/core/visionEngine/`:
+
+* **`VisionModel` (`VisionModel.ts`):** Modelo de aprendizaje estadístico local (estandarización Z-score + pesos discriminantes de Fisher + clustering determinista k-means multi-prototipo sobre 13 características geométricas/fotométricas). Entrenado offline con `node scripts/train_vision_model.mjs` sobre 64 regiones reales (79.7 % exactitud entrenamiento / 62.5 % validación cruzada *Leave-One-Furniture-Out*) y persistido en `docs/evidencia/modelo_vision_v1.json` + `src/core/visionEngine/trainedModelData.ts`.
+* **`PerspectiveRectifier` (`PerspectiveRectifier.ts`):** Homografía `3×3`, Zhang focal fija (`26/52 mm`), detección de patas externas y **`autoFrameSubjectQuad()`** (auto-encuadre para fotos de fondo limpio excluyendo patas, con honestidad `confidence < 0.5` en fondos con pared/ambiente real).
+* **`IShapeRecognitionStrategy` (`Strategies.ts`):** Estrategias intercambiables (`OpenGridRecognitionStrategy`, `HierarchicalPlanarRecognitionStrategy`).
+* **`CellFeatureExtractor` (`CellFeatureExtractor.ts`):** Extractor compartido entre entrenamiento offline e inferencia en vivo.
+* **`VectorRenderer2D` (`VectorRenderer2D.ts`):** Renderizador SVG técnico reutilizable (`render` y `renderComparisonPair`).
+* **`VisionVectorizationAgent` (`VisionVectorizationAgent.ts`):** Clase fachada reutilizable en cualquier aplicación futura de la OFG (`.autoFrame()`, `.recognizeFromPhoto()`, `.trainFromDataset()`, `.vectorize()`, `.exportModelJson()`).
+
+---
+
+## 5. Protocolo Obligatorio de QA Anti-Regresión y Rollback Seguro en Git
+
+**NUNCA** commitear cambios en `src/core/vision/`, `src/core/visionEngine/`, `src/core/mathEngine/`, `src/core/cuttingStock/` o `src/core/vectorBlueprint/` sin pasar **LAS 6 COMPUERTAS** en verde:
 
 ```powershell
 $env:PATH = "C:\TRABAJO\SOFTWARE\nodejs;$env:PATH"
 node node_modules/vitest/vitest.mjs run
 node node_modules/typescript/bin/tsc -b
 node node_modules/vite/bin/vite.js build
+node scripts/train_vision_model.mjs
 node scripts/benchmark_vision_14.mjs
 node scripts/generate_14_blueprints.mjs
 ```

@@ -1,8 +1,8 @@
-# REPORTE DE CERTIFICACIÓN QA — 14 MUEBLES REALES (SmartFurniture v3.3)
+# REPORTE DE CERTIFICACIÓN QA — 14 MUEBLES REALES (SmartFurniture v3.4 POO)
 
-> **Estado General:** `14 / 14` muebles certificados con **0 solapamientos 3D AABB**, **0 piezas sin ubicar en planchas `244×122 cm`**, **42 planos SVG** generados físicamente en disco, y **motor de visión real calibrado sobre píxeles crudos (`50.3%` → `87.4%` global / `92.8%` en 12 frontales estándar)**.
+> **Estado General:** `14 / 14` muebles certificados con **0 solapamientos 3D AABB**, **0 piezas sin ubicar en planchas `244×122 cm`**, **42 planos SVG** generados físicamente en disco, **Librería POO reutilizable (`src/core/visionEngine/`) + 6.º Agente OFG (`AGENTE_VISION_VECTORIZACION`) + Modelo de Aprendizaje Local (`modelo_vision_v1.json`, v1.1.0: 64 regiones reales, 79.7% entrenamiento / 62.5% LOFO CV)** y **motor de visión calibrado sobre píxeles crudos (`50.3%` → `87.4%` global / `92.8%` en 12 frontales estándar)**.
 > **Galería visual 100 % offline:** Abrir `galeria_qa_14_muebles.html` en cualquier navegador local.
-> **Script reproducible de visión real:** `node scripts/benchmark_vision_14.mjs`
+> **Scripts reproducibles:** `node scripts/train_vision_model.mjs` y `node scripts/benchmark_vision_14.mjs`
 
 ---
 

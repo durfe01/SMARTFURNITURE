@@ -12,6 +12,7 @@ import {
   Camera,
   Crosshair,
   Eraser,
+  Maximize2,
   Pipette,
   Ruler,
   ScanSearch,
@@ -32,14 +33,9 @@ import {
   interiorToExterior,
 } from '../../core/mathEngine';
 import {
-  analyzeRectifiedFurniture,
-  computeRectifiedSize,
-  detectLowerGapHint,
-  estimateAspectRatioFixedFocal,
-  extrapolateDimensionsFromSingleMeasure,
   rectifyImageRGBA,
 } from '../../core/vision';
-import { inferFrontZonesFromDetection } from '../../core/vectorBlueprint';
+import { defaultVisionAgent } from '../../core/visionEngine';
 
 interface VectorCanvasProps {
   topology: FurnitureTopology;
@@ -241,7 +237,7 @@ export function VectorCanvas({
   const homography = useMemo(() => computeQuadToUnitHomography(quad), [quad]);
 
   const estimatedAspectXY = useMemo(() => {
-    return estimateAspectRatioFixedFocal(quad, imgSize.w, imgSize.h, focal35mm);
+    return defaultVisionAgent.estimateAspectRatio(quad, imgSize.w, imgSize.h, focal35mm);
   }, [quad, imgSize.w, imgSize.h, focal35mm]);
 
   const extractSourceRgba = (image: HTMLImageElement): { rgba: Uint8ClampedArray; w: number; h: number } => {
@@ -559,6 +555,23 @@ export function VectorCanvas({
     };
   };
 
+  const handleAutoFrameQuad = () => {
+    const srcCache = srcRgbaCacheRef.current;
+    if (!srcCache || srcCache.w === 0) {
+      setStatusMsg('Primero carga una foto frontal para auto-encuadrar.');
+      return;
+    }
+    const framed = defaultVisionAgent.autoFrame({
+      rgba: srcCache.rgba,
+      width: srcCache.w,
+      height: srcCache.h,
+    });
+    if (framed.confidence >= 0.5) {
+      setQuad(framed.quad);
+    }
+    setStatusMsg(framed.message);
+  };
+
   const runAutoDetection = (seedPoint?: { u: number; v: number }) => {
     const srcCache = srcRgbaCacheRef.current;
     if (!srcCache || srcCache.w === 0 || !homography) {
@@ -566,30 +579,28 @@ export function VectorCanvas({
       return;
     }
 
-    const { width: dstW, height: dstH } = computeRectifiedSize(
+    // Sincronizar proporción V0 real de la foto (conservando ancho de referencia o extrapolando alto)
+    const syncedDims = defaultVisionAgent.extrapolateDimensions(
+      estimatedAspectXY,
+      'x',
       params.targetDimensions.x,
-      params.targetDimensions.y,
-      params.boardThickness,
-    );
-    const rectRgba = rectifyImageRGBA(
-      srcCache.rgba,
-      srcCache.w,
-      srcCache.h,
-      homography.toCanvas,
-      dstW,
-      dstH,
+      params.targetDimensions.z,
     );
 
-    const det = analyzeRectifiedFurniture(
-      rectRgba,
-      dstW,
-      dstH,
-      { x: params.targetDimensions.x, y: params.targetDimensions.y },
+    const report = defaultVisionAgent.recognizeFromPhoto(
+      { rgba: srcCache.rgba, width: srcCache.w, height: srcCache.h },
+      quad,
+      { x: syncedDims.x, y: syncedDims.y },
       params.boardThickness,
-      { seedPoint, parallaxAware: true, horizonV: 0.5 },
+      { seedPoint, parallaxAware: true, horizonV: 0.5, focal35mm },
     );
+    if (!report) {
+      setStatusMsg('Cuadrilátero inválido para homografía. Separa las 4 esquinas en orden horario.');
+      return;
+    }
 
-    const legsHint = detectLowerGapHint(srcCache.rgba, srcCache.w, srcCache.h, quad);
+    const det = report.detection;
+    const legsHint = report.legsHint;
     setLegHintDetected(legsHint.possibleExternalLegs);
 
     // Proyectar tiradores detectados sobre la foto y registrarlos en Herrajes (sin duplicar)
@@ -607,7 +618,7 @@ export function VectorCanvas({
         categoria: 'tiradores',
         descripcion: `Tiradores / manillas detectados en frente (${det.detectedHandles.length} u.)`,
         cantidad: det.detectedHandles.length,
-        notaCompra: `Detectados automáticamente sobre mueble cerrado. Adquirir ${det.detectedHandles.length} tiradores aparte (no son melamina).`,
+        notaCompra: `Detectados automáticamente por ${report.modelId} v${report.modelVersion}. Adquirir ${det.detectedHandles.length} tiradores aparte (no son melamina).`,
         origen: 'detectado',
       });
     }
@@ -623,40 +634,19 @@ export function VectorCanvas({
             : 'Baja Confianza';
     setDetectedModeLabel(modeText);
 
-    const inferredZones = inferFrontZonesFromDetection(
-      det.vDividers,
-      det.hShelves,
-      det.furnitureMode,
-      det.detectedHandles,
-      det.detectedZones,
-    );
-
-    // Excluir las ranuras puramente internas de cajoneras de las repisas estructurales de melamina
-    const structuralShelves =
-      det.furnitureMode === 'closed_front'
-        ? []
-        : det.hShelves.filter(
-            (s) =>
-              !inferredZones.some(
-                (z) =>
-                  z.kind === 'drawers' &&
-                  s.position > z.vStart + 0.02 &&
-                  s.position < z.vEnd - 0.02 &&
-                  s.start >= z.uStart - 0.03 &&
-                  s.end <= z.uEnd + 0.03,
-              ),
-          );
+    // Actualizar dimensiones de referencia V0 = Vf con la relación de aspecto real detectada
+    onApplyCalibratedDims(syncedDims);
 
     onUpdateTopology({
       ...topology,
-      aspectRatioXY: estimatedAspectXY,
+      aspectRatioXY: report.estimatedAspectXY,
       quadCorners: quad,
-      homographyMatrix: homography.toUnit.map((r) => [...r]),
+      homographyMatrix: report.homographyToUnit,
       shelfMode: 'custom',
       vDividers: det.vDividers,
-      hShelves: structuralShelves,
-      frontZones: det.confidence >= 0.5 ? inferredZones : topology.frontZones,
-      furnitureProfileLabel: `${modeText} (${inferredZones.length} módulos)`,
+      hShelves: report.structuralShelves,
+      frontZones: det.confidence >= 0.5 ? report.autoZones : topology.frontZones,
+      furnitureProfileLabel: `${modeText} (${report.autoZones.length} módulos)`,
       hardwareItems: nextHardware,
       detectionSource: 'auto',
       detectionConfidence: det.confidence,
@@ -675,7 +665,7 @@ export function VectorCanvas({
         ? ' Se detectaron posibles patas externas debajo del cuerpo.'
         : '';
       setStatusMsg(
-        `[${modeText}] Detectado (${Math.round(det.confidence * 100)}% confianza): ${det.vDividers.length} división(es) vertical(es) y ${det.hShelves.length} horizontal(es)${handleMsg}${legsMsg}`,
+        `[${modeText} · VisionModel v${report.modelVersion}] Detectado (${Math.round(det.confidence * 100)}% confianza): ${det.vDividers.length} división(es) vertical(es), ${det.hShelves.length} horizontal(es) y ${report.autoZones.length} módulo(s) frontales${handleMsg}${legsMsg} Pulsa "Siguiente → Ver Plano Vectorial 2D" para redimensionar.`,
       );
     }
   };
@@ -842,7 +832,7 @@ export function VectorCanvas({
           homographyMatrix: homography.toUnit.map((r) => [...r]),
         });
       } else if (viewTab === 'lateral' && sideImgEl) {
-        const ratioZY = estimateAspectRatioFixedFocal(
+        const ratioZY = defaultVisionAgent.estimateAspectRatio(
           sideQuad,
           sideImgEl.naturalWidth,
           sideImgEl.naturalHeight,
@@ -909,7 +899,7 @@ export function VectorCanvas({
   };
 
   const handleApplySingleMeasure = () => {
-    const ext = extrapolateDimensionsFromSingleMeasure(
+    const ext = defaultVisionAgent.extrapolateDimensions(
       estimatedAspectXY,
       knownAxis,
       knownMeasureMm,
@@ -1077,6 +1067,15 @@ export function VectorCanvas({
         <div className="canvas-toolbar">
           <button
             type="button"
+            className="btn-secondary"
+            onClick={handleAutoFrameQuad}
+            disabled={!imgEl}
+            title="Detecta automáticamente el contorno del mueble en fotos de catálogo o fondo uniforme"
+          >
+            <Maximize2 size={15} /> Auto-encuadrar mueble
+          </button>
+          <button
+            type="button"
             className="btn-primary"
             onClick={() => runAutoDetection()}
             disabled={!imgEl || !homography}
@@ -1228,7 +1227,10 @@ export function VectorCanvas({
             </div>
           )}
           <div className="small-note muted">
-            Divisores: {topology.vDividers.length} · Repisas: {topology.hShelves.length}
+            Divisores: {topology.vDividers.length} · Repisas: {topology.hShelves.length} · Módulos: {(topology.frontZones ?? []).length}
+          </div>
+          <div className="mono small-note muted">
+            Agente POO · Modelo v{defaultVisionAgent.getModel().version} ({defaultVisionAgent.getModel().metadata.sampleCount} regiones)
           </div>
         </div>
       </div>

@@ -34,6 +34,8 @@ interface MathPanelProps {
   cuttingPlan: CuttingPlanResult;
   topology: FurnitureTopology;
   params: ScaleAndBoardParams;
+  modelApproved?: boolean;
+  onGoToBlueprint?: () => void;
   onFixReferenceV0: () => void;
   onAddCenterDivider: () => void;
   onAddHardwareItem: (item: HardwareItem) => void;
@@ -59,6 +61,8 @@ export function MathPanel({
   cuttingPlan,
   topology,
   params,
+  modelApproved = true,
+  onGoToBlueprint,
   onFixReferenceV0,
   onAddCenterDivider,
   onAddHardwareItem,
@@ -386,11 +390,35 @@ export function MathPanel({
               </div>
             )}
 
+            {!modelApproved && (
+              <div className="alert-box warning">
+                <strong>Aprobación pendiente del Plano Vectorial 2D:</strong>{' '}
+                aprueba el nuevo modelo vectorial redimensionado antes de descargar planchas de corte.{' '}
+                {onGoToBlueprint && (
+                  <button type="button" className="btn-small" onClick={onGoToBlueprint}>
+                    Ir a Aprobar Modelo Vectorial
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="export-bar">
-              <button type="button" className="btn-primary" onClick={handleExportSvg}>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleExportSvg}
+                disabled={!modelApproved}
+                title={modelApproved ? 'Descargar plano de corte SVG' : 'Aprueba primero el plano vectorial en Paso 2'}
+              >
                 <Download size={15} /> Descargar Plano SVG
               </button>
-              <button type="button" className="btn-secondary" onClick={handleExportExcel}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleExportExcel}
+                disabled={!modelApproved}
+                title={modelApproved ? 'Exportar Excel completo (.xls)' : 'Aprueba primero el plano vectorial en Paso 2'}
+              >
                 <FileSpreadsheet size={15} /> Exportar Excel (.xls)
               </button>
             </div>

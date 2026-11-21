@@ -15,7 +15,7 @@ import type {
   ScaleAndBoardParams,
 } from '../../types/contracts';
 import { calculateDespiece } from '../../core/mathEngine';
-import { renderFurnitureVectorBlueprintSvg } from '../../core/vectorBlueprint';
+import { defaultVisionAgent } from '../../core/visionEngine';
 
 interface VectorBlueprintPanelProps {
   topology: FurnitureTopology;
@@ -66,7 +66,7 @@ export function VectorBlueprintPanel({
 
   const svgOriginal = useMemo(
     () =>
-      renderFurnitureVectorBlueprintSvg(topology, originalParams, despieceOriginal, {
+      defaultVisionAgent.vectorize(topology, originalParams, despieceOriginal, {
         stageLabel: 'MODELO VECTORIAL ORIGINAL (INTERPRETADO V₀)',
       }),
     [topology, originalParams, despieceOriginal],
@@ -74,7 +74,7 @@ export function VectorBlueprintPanel({
 
   const svgResized = useMemo(
     () =>
-      renderFurnitureVectorBlueprintSvg(topology, params, despiece, {
+      defaultVisionAgent.vectorize(topology, params, despiece, {
         stageLabel: 'NUEVO MODELO VECTORIAL REDIMENSIONADO (V_f)',
         cuttingPlan,
       }),

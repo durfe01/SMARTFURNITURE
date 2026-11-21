@@ -39,7 +39,7 @@ export default function App() {
   const [params, setParams] = useState<ScaleAndBoardParams>(initial.params);
   const [explodeFactor, setExplodeFactor] = useState<number>(0);
   const [sheetStandard, setSheetStandard] = useState<SheetStandard>('pauta');
-  const [activeStep, setActiveStep] = useState<ActiveStep>('vectorial');
+  const [activeStep, setActiveStep] = useState<ActiveStep>('foto');
   const [modelApproved, setModelApproved] = useState<boolean>(true);
 
   const despiece = useMemo(
@@ -158,7 +158,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <div className="brand-title">SmartFurniture v3.3 — Foto → Plano Vectorial → 3D &amp; Corte 244×122</div>
+          <div className="brand-title">SmartFurniture v3.4 — Agente POO Visión → Plano Vectorial → 3D &amp; Corte 244×122</div>
           <div className="brand-sub">
             100% Local Offline · INACAP Unidad 3 · Puertas, Cajones (5 pzas), Herrajes y Planchas 244×122 cm
           </div>
@@ -640,6 +640,8 @@ export default function App() {
             cuttingPlan={cuttingPlan}
             topology={topology}
             params={params}
+            modelApproved={modelApproved}
+            onGoToBlueprint={() => setActiveStep('vectorial')}
             onFixReferenceV0={() =>
               setParams((p) => ({
                 ...p,
