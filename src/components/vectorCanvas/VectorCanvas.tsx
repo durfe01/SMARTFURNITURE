@@ -217,6 +217,7 @@ export function VectorCanvas({
     'Carga una foto frontal (o el croquis local) y ajusta las 4 esquinas del cuerpo de melamina.',
   );
   const [legHintDetected, setLegHintDetected] = useState<boolean>(false);
+  const [detectedModeLabel, setDetectedModeLabel] = useState<string>('');
   const [hardwareMarkers, setHardwareMarkers] = useState<Point2D[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -590,6 +591,35 @@ export function VectorCanvas({
     const legsHint = detectLowerGapHint(srcCache.rgba, srcCache.w, srcCache.h, quad);
     setLegHintDetected(legsHint.possibleExternalLegs);
 
+    // Proyectar tiradores detectados sobre la foto y registrarlos en Herrajes (sin duplicar)
+    const manualHardware = (topology.hardwareItems ?? []).filter((h) => h.origen !== 'detectado');
+    const nextHardware = [...manualHardware];
+    const projectedHandles: Point2D[] = [];
+
+    if (det.detectedHandles.length > 0) {
+      for (const hPt of det.detectedHandles) {
+        const mapped = applyHomography(homography.toCanvas, { x: hPt.u, y: hPt.v });
+        if (mapped) projectedHandles.push(mapped);
+      }
+      nextHardware.push({
+        id: 'hw_tiradores_auto',
+        categoria: 'tiradores',
+        descripcion: `Tiradores / manillas detectados en frente (${det.detectedHandles.length} u.)`,
+        cantidad: det.detectedHandles.length,
+        notaCompra: `Detectados automáticamente sobre mueble cerrado. Adquirir ${det.detectedHandles.length} tiradores aparte (no son melamina).`,
+        origen: 'detectado',
+      });
+    }
+    setHardwareMarkers(projectedHandles);
+
+    const modeText =
+      det.furnitureMode === 'closed_front'
+        ? 'Mueble Cerrado (Puertas/Cajones)'
+        : det.furnitureMode === 'open'
+          ? 'Mueble Abierto (Estantería/Vanos)'
+          : 'Baja Confianza';
+    setDetectedModeLabel(modeText);
+
     onUpdateTopology({
       ...topology,
       aspectRatioXY: estimatedAspectXY,
@@ -598,20 +628,25 @@ export function VectorCanvas({
       shelfMode: 'custom',
       vDividers: det.vDividers,
       hShelves: det.hShelves,
+      hardwareItems: nextHardware,
       detectionSource: 'auto',
       detectionConfidence: det.confidence,
     });
 
     if (det.confidence < 0.5) {
       setStatusMsg(
-        `Confianza baja (${Math.round(det.confidence * 100)}%, interiorMatch=${Math.round(det.interiorMatch * 100)}%). Probable mueble claro sobre fondo claro: usa "Gotero 1 clic" o traza las líneas manualmente en segundos.`,
+        `Confianza baja (${Math.round(det.confidence * 100)}%, interiorMatch=${Math.round(det.interiorMatch * 100)}%). Verifica que las 4 esquinas TL/TR/BR/BL enmarquen EXACTAMENTE el cuerpo del mueble (sin pared ni patas) o usa "Gotero 1 clic" / trazado manual.`,
       );
     } else {
+      const handleMsg =
+        det.detectedHandles.length > 0
+          ? ` + ${det.detectedHandles.length} tirador(es) registrados en Herrajes.`
+          : '.';
+      const legsMsg = legsHint.possibleExternalLegs
+        ? ' Se detectaron posibles patas externas debajo del cuerpo.'
+        : '';
       setStatusMsg(
-        `Detectado (${Math.round(det.confidence * 100)}% confianza): ${det.vDividers.length} divisor(es) y ${det.hShelves.length} repisa(s).` +
-          (legsHint.possibleExternalLegs
-            ? ' Se sugiere revisar si tiene patas externas debajo del cuerpo.'
-            : ''),
+        `[${modeText}] Detectado (${Math.round(det.confidence * 100)}% confianza): ${det.vDividers.length} división(es) vertical(es) y ${det.hShelves.length} horizontal(es)${handleMsg}${legsMsg}`,
       );
     }
   };
@@ -1158,6 +1193,7 @@ export function VectorCanvas({
           </div>
           {conf !== undefined && topology.detectionSource === 'auto' && (
             <div className={`conf-badge ${confClass}`}>
+              {detectedModeLabel ? `${detectedModeLabel} · ` : ''}
               Confianza: {Math.round(conf * 100)}%
               {conf < 0.5 ? ' — Trazar manual' : conf < 0.7 ? ' — Revisar' : ' — Alta'}
             </div>

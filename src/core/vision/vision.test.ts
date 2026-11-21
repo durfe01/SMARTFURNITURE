@@ -421,4 +421,71 @@ describe('SmartFurniture Módulo Visión Offline (`src/core/vision/`) — v3.0',
     expect(rect[topIdx]).toBeGreaterThan(180);
     expect(rect[botIdx + 2]).toBeGreaterThan(180);
   });
+
+  it('Escenario 9 (Mueble Cerrado Real — Buffet 3 puertas con molduras + 3 cajones + 6 tiradores): ignora molduras y detecta juntas y tiradores', () => {
+    const W = 600;
+    const H = 270;
+    const rgba = new Uint8ClampedArray(W * H * 4);
+    const rng = createRng(909);
+
+    // Base madera natural uniforme (roble/pino)
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const grad = 0.92 + 0.14 * (x / W);
+        const noise = (rng() - 0.5) * 6;
+        const i = (y * W + x) * 4;
+        rgba[i] = Math.min(255, Math.round(188 * grad + noise));
+        rgba[i + 1] = Math.min(255, Math.round(138 * grad + noise));
+        rgba[i + 2] = Math.min(255, Math.round(82 * grad + noise));
+        rgba[i + 3] = 255;
+      }
+    }
+
+    const drawRect = (x0: number, y0: number, x1: number, y1: number, rgb: [number, number, number]) => {
+      for (let y = Math.max(0, y0); y < Math.min(H, y1); y++) {
+        for (let x = Math.max(0, x0); x < Math.min(W, x1); x++) {
+          const i = (y * W + x) * 4;
+          rgba[i] = rgb[0];
+          rgba[i + 1] = rgb[1];
+          rgba[i + 2] = rgb[2];
+          rgba[i + 3] = 255;
+        }
+      }
+    };
+
+    // 3 juntas verticales continuas de punta a punta (x = 150, 300, 450)
+    for (const vx of [150, 300, 450]) {
+      drawRect(vx - 1, 0, vx + 2, H, [42, 28, 16]);
+    }
+    // Molduras decorativas DENTRO de las 3 puertas (NO llegan a los bordes superior/inferior!)
+    for (const [dx0, dx1] of [[0, 150], [150, 300], [300, 450]]) {
+      drawRect(dx0 + 24, 38, dx0 + 27, H - 38, [95, 65, 36]);
+      drawRect(dx1 - 27, 38, dx1 - 24, H - 38, [95, 65, 36]);
+      drawRect(dx0 + 24, 38, dx1 - 24, 41, [95, 65, 36]);
+      drawRect(dx0 + 24, H - 41, dx1 - 24, H - 38, [95, 65, 36]);
+    }
+    // 2 juntas horizontales de cajones SOLO en la columna derecha [450..600]
+    drawRect(450, 89, W, 92, [38, 25, 14]);
+    drawRect(450, 179, W, 182, [38, 25, 14]);
+
+    // 6 tiradores metálicos oscuros (3 puertas + 3 cajones)
+    drawRect(130, 118, 138, 154, [24, 22, 20]); // Puerta 1
+    drawRect(162, 118, 170, 154, [24, 22, 20]); // Puerta 2
+    drawRect(316, 118, 324, 154, [24, 22, 20]); // Puerta 3
+    drawRect(512, 42, 544, 49, [24, 22, 20]);   // Cajón 1
+    drawRect(512, 132, 544, 139, [24, 22, 20]); // Cajón 2
+    drawRect(512, 222, 544, 229, [24, 22, 20]); // Cajón 3
+
+    const res = analyzeRectifiedFurniture(rgba, W, H, { x: 1800, y: 800 }, 18);
+    expect(res.furnitureMode).toBe('closed_front');
+    expect(res.confidence).toBeGreaterThanOrEqual(0.7);
+    expect(res.vDividers).toHaveLength(3);
+    expect(res.hShelves).toHaveLength(2);
+    // Ambas repisas/divisiones horizontales están en el vano derecho [~0.75..1]
+    for (const sh of res.hShelves) {
+      expect(sh.start).toBeGreaterThan(0.7);
+      expect(sh.end).toBeCloseTo(1, 2);
+    }
+    expect(res.detectedHandles).toHaveLength(6);
+  });
 });

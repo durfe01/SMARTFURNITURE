@@ -8,6 +8,7 @@ export {
 export type {
   BandDetectionResult,
   BandDetectorOptions,
+  DetectedHandlePoint,
   LowerGapHintResult,
 } from './bandDetector';
 export {
