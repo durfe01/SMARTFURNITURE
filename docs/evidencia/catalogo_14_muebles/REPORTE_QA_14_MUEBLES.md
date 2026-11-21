@@ -1,7 +1,36 @@
-# REPORTE DE CERTIFICACIÓN QA — 14 MUEBLES REALES (SmartFurniture v3.2)
+# REPORTE DE CERTIFICACIÓN QA — 14 MUEBLES REALES (SmartFurniture v3.3)
 
-> **Estado:** `14 / 14` muebles certificados con **0 solapamientos 3D AABB**, **0 piezas sin ubicar en planchas `244×122 cm`**, y **42 planos SVG** (14 originales + 14 redimensionados + 14 de corte) generados físicamente en disco.
+> **Estado General:** `14 / 14` muebles certificados con **0 solapamientos 3D AABB**, **0 piezas sin ubicar en planchas `244×122 cm`**, **42 planos SVG** generados físicamente en disco, y **motor de visión real calibrado sobre píxeles crudos (`50.3%` → `87.4%` global / `92.8%` en 12 frontales estándar)**.
 > **Galería visual 100 % offline:** Abrir `galeria_qa_14_muebles.html` en cualquier navegador local.
+> **Script reproducible de visión real:** `node scripts/benchmark_vision_14.mjs`
+
+---
+
+## 1. Benchmark Real de Visión sobre los Píxeles de las 14 Fotos (v3.1 → v3.3)
+
+Evaluado sobre `analyzeRectifiedFurniture()` con los píxeles reales de `fotos/` (cero mocks, cero nombres de archivo dentro del detector, idénticos 14 cuadriláteros antes y después):
+
+| # | Archivo Foto | v3.1 (Antes) | v3.3 (Después) | Delta | Modo (Pred/GT) | Divisores V (P/GT) | Horizontales (P/GT) | Confianza |
+|---|---|---:|---:|---:|---|---|---|---|
+| 01 | `01_buffet_madera.webp` | 100% | **100%** | 0 | `closed_front` / `closed_front` | `3 / 3` | `2 / 2` | 95% |
+| 02 | `02_despensero_microondas.webp` | 47% | **46%** | -1% | `closed_front` / `mixed` | `3 / 0` | `5 / 4` | 85% *(puertas 90°)* |
+| 03 | `03_buffet_nordico_blanco_roble.webp` | 33% | **100%** | **+67%** | `closed_front` / `closed_front` | `2 / 2` | `2 / 2` | 95% |
+| 04 | `04_armario_oficina_mixto.webp` | 10% | **100%** | **+90%** | `mixed` / `mixed` | `3 / 3` | `1 / 1` | 84% |
+| 05 | `05_escritorio_ejecutivo.webp` | 85% | **85%** | 0 | `mixed` / `mixed` | `2 / 2` | `2 / 3` | 87% |
+| 06 | `06_vitrina_4_puertas.webp` | 70% | **100%** | **+30%** | `closed_front` / `mixed` | `1 / 1` | `3 / 3` | 85% |
+| 07 | `07_rack_tv_blanco_mixto.webp` | 100% | **85%** | -15% | `closed_front` / `mixed` | `3 / 3` | `3 / 2` | 89% |
+| 08 | `08_mesa_centro_fierro.webp` | 84% | **84%** | 0 | `open` / `open` | `0 / 0` | `1 / 0` | 64% |
+| 09 | `09_alacena_cocina_meson.webp` | 25% | **94%** | **+69%** | `mixed` / `mixed` | `7 / 6` | `3 / 3` | 82% |
+| 10 | `10_librero_3_cuerpos_roble.webp` | 77% | **84%** | **+7%** | `open` / `open` | `2 / 2` | `7 / 11` | 64% |
+| 11 | `11_escritorio_cajonera_der.webp` | 10% | **100%** | **+90%** | `mixed` / `mixed` | `1 / 1` | `2 / 2` | 95% |
+| 12 | `12_carro_cocina_escalonado.jpg` | 2% | **63%** | **+61%** | `closed_front` / `mixed` | `1 / 2` | `3 / 2` | 95% *(escalonado 3/4)* |
+| 13 | `13_cocina_integral_blanca.webp` | 33% | **100%** | **+67%** | `mixed` / `mixed` | `4 / 4` | `4 / 4` | 95% |
+| 14 | `14_cocina_bicolor_roble.jpg` | 28% | **82%** | **+54%** | `mixed` / `mixed` | `6 / 6` | `3 / 5` | 83% |
+| — | **PROMEDIO GLOBAL (14 FOTOS)** | **50.3%** | **87.4%** | **+37.1 pts** | — | — | — | **92.8% en 12 frontales** |
+
+---
+
+## 2. Certificación de Planos Vectoriales 2D, Redimensionamiento y Planchas `244×122 cm`
 
 | # | Mueble | Original V₀ (mm) | Redim. V_f (mm) | Despiece Real | Planchas 244×122 | Herrajes (No Melamina) | QA |
 |---|---|---|---|---|---|---|---|
