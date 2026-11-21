@@ -39,6 +39,7 @@ import {
   extrapolateDimensionsFromSingleMeasure,
   rectifyImageRGBA,
 } from '../../core/vision';
+import { inferFrontZonesFromDetection } from '../../core/vectorBlueprint';
 
 interface VectorCanvasProps {
   topology: FurnitureTopology;
@@ -620,6 +621,13 @@ export function VectorCanvas({
           : 'Baja Confianza';
     setDetectedModeLabel(modeText);
 
+    const inferredZones = inferFrontZonesFromDetection(
+      det.vDividers,
+      det.hShelves,
+      det.furnitureMode,
+      det.detectedHandles,
+    );
+
     onUpdateTopology({
       ...topology,
       aspectRatioXY: estimatedAspectXY,
@@ -627,7 +635,9 @@ export function VectorCanvas({
       homographyMatrix: homography.toUnit.map((r) => [...r]),
       shelfMode: 'custom',
       vDividers: det.vDividers,
-      hShelves: det.hShelves,
+      hShelves: det.furnitureMode === 'closed_front' ? [] : det.hShelves,
+      frontZones: det.confidence >= 0.5 ? inferredZones : topology.frontZones,
+      furnitureProfileLabel: `${modeText} (${det.vDividers.length + 1} módulos)`,
       hardwareItems: nextHardware,
       detectionSource: 'auto',
       detectionConfidence: det.confidence,
