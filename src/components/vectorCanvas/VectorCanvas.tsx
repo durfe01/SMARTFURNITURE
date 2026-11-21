@@ -20,6 +20,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import type {
+  DespieceResult,
   FurnitureTopology,
   HardwareItem,
   NormalizedSegment,
@@ -40,12 +41,14 @@ import { defaultVisionAgent } from '../../core/visionEngine';
 interface VectorCanvasProps {
   topology: FurnitureTopology;
   params: ScaleAndBoardParams;
+  despiece: DespieceResult;
   onUpdateTopology: (next: FurnitureTopology) => void;
   onApplyCalibratedDims: (dims: { x: number; y: number; z: number }) => void;
   onToggleBackPanel: (checked: boolean) => void;
   onToggleExternalLegs: (checked: boolean, heightMm?: number, count?: number) => void;
   onAddHardwareItem: (item: HardwareItem) => void;
   onSelectDepthMm: (zMm: number) => void;
+  onGoToBlueprint?: () => void;
 }
 
 type ToolMode =
@@ -164,12 +167,14 @@ function generateSampleFurnitureDataUrl(): string {
 export function VectorCanvas({
   topology,
   params,
+  despiece,
   onUpdateTopology,
   onApplyCalibratedDims,
   onToggleBackPanel,
   onToggleExternalLegs,
   onAddHardwareItem,
   onSelectDepthMm,
+  onGoToBlueprint,
 }: VectorCanvasProps) {
   const [viewTab, setViewTab] = useState<'frontal' | 'lateral'>('frontal');
   const [showProtocol, setShowProtocol] = useState(true);
@@ -214,12 +219,24 @@ export function VectorCanvas({
     'Carga una foto frontal (o el croquis local) y ajusta las 4 esquinas del cuerpo de melamina.',
   );
   const [legHintDetected, setLegHintDetected] = useState<boolean>(false);
+  const [needsManualCorners, setNeedsManualCorners] = useState<boolean>(false);
   const [detectedModeLabel, setDetectedModeLabel] = useState<string>('');
   const [hardwareMarkers, setHardwareMarkers] = useState<Point2D[]>([]);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rectPreviewRef = useRef<HTMLCanvasElement | null>(null);
   const srcRgbaCacheRef = useRef<{ rgba: Uint8ClampedArray; w: number; h: number } | null>(null);
+  const quadRef = useRef<[Point2D, Point2D, Point2D, Point2D]>(quad);
+  quadRef.current = quad;
+
+  const liveBlueprintSvg = useMemo(
+    () =>
+      defaultVisionAgent.vectorize(topology, params, despiece, {
+        title: topology.furnitureProfileLabel ?? 'Vista Previa Vectorial 2D',
+        stageLabel: 'MODELO VECTORIAL INTERPRETADO EN VIVO (V₀)',
+      }),
+    [topology, params, despiece],
+  );
 
   // Limpieza segura de URLs creadas con createObjectURL
   useEffect(() => {
@@ -253,6 +270,128 @@ export function VectorCanvas({
     return { rgba: data.data, w: off.width, h: off.height };
   };
 
+  const executeDetectionPipeline = (
+    activeQuad: [Point2D, Point2D, Point2D, Point2D],
+    srcCache: { rgba: Uint8ClampedArray; w: number; h: number },
+    seedPoint?: { u: number; v: number },
+    autoNote?: string,
+  ) => {
+    const activeHom = computeQuadToUnitHomography(activeQuad);
+    if (!activeHom || srcCache.w === 0) {
+      setStatusMsg('Cuadrilátero inválido para homografía. Separa las 4 esquinas en orden horario.');
+      return;
+    }
+
+    const aspect = defaultVisionAgent.estimateAspectRatio(
+      activeQuad,
+      srcCache.w,
+      srcCache.h,
+      focal35mm,
+    );
+    // Estimar ancho inicial realista según silueta (mueble bajo/ancho ~1500 mm, vertical/alto ~1000-1400 mm)
+    const baseWidth = aspect >= 1.45 ? 1600 : aspect <= 0.75 ? 900 : 1200;
+    const syncedDims = defaultVisionAgent.extrapolateDimensions(
+      aspect,
+      'x',
+      baseWidth,
+      params.targetDimensions.z,
+    );
+
+    const report = defaultVisionAgent.recognizeFromPhoto(
+      { rgba: srcCache.rgba, width: srcCache.w, height: srcCache.h },
+      activeQuad,
+      { x: syncedDims.x, y: syncedDims.y },
+      params.boardThickness,
+      { seedPoint, parallaxAware: true, horizonV: 0.5, focal35mm },
+    );
+    if (!report) {
+      setStatusMsg('Cuadrilátero inválido para homografía. Separa las 4 esquinas en orden horario.');
+      return;
+    }
+
+    const det = report.detection;
+    const legsHint = report.legsHint;
+    setLegHintDetected(legsHint.possibleExternalLegs);
+
+    // Proyectar tiradores detectados sobre la foto y registrarlos en Herrajes (sin duplicar)
+    const manualHardware = (topology.hardwareItems ?? []).filter((h) => h.origen !== 'detectado');
+    const nextHardware = [...manualHardware];
+    const projectedHandles: Point2D[] = [];
+
+    if (det.detectedHandles.length > 0) {
+      for (const hPt of det.detectedHandles) {
+        const mapped = applyHomography(activeHom.toCanvas, { x: hPt.u, y: hPt.v });
+        if (mapped) projectedHandles.push(mapped);
+      }
+      nextHardware.push({
+        id: 'hw_tiradores_auto',
+        categoria: 'tiradores',
+        descripcion: `Tiradores / manillas detectados en frente (${det.detectedHandles.length} u.)`,
+        cantidad: det.detectedHandles.length,
+        notaCompra: `Detectados automáticamente por ${report.modelId} v${report.modelVersion}. Adquirir ${det.detectedHandles.length} tiradores aparte (no son melamina).`,
+        origen: 'detectado',
+      });
+    }
+    setHardwareMarkers(projectedHandles);
+
+    const modeText =
+      det.furnitureMode === 'closed_front'
+        ? 'Mueble Cerrado (Puertas/Cajones)'
+        : det.furnitureMode === 'mixed'
+          ? 'Mueble Mixto / Multinivel'
+          : det.furnitureMode === 'open'
+            ? 'Mueble Abierto (Estantería/Vanos)'
+            : 'Ajustar 4 Esquinas';
+    setDetectedModeLabel(modeText);
+
+    // Actualizar dimensiones de referencia V0 = Vf con la relación de aspecto real detectada
+    onApplyCalibratedDims(syncedDims);
+
+    // SIEMPRE limpiar el preset anterior (`equalShelfCount: 0, shelfMode: 'custom'`)
+    // para que jamás quede fantasma de la estantería inicial sobre una foto nueva
+    onUpdateTopology({
+      ...topology,
+      aspectRatioXY: report.estimatedAspectXY,
+      quadCorners: activeQuad,
+      homographyMatrix: report.homographyToUnit,
+      shelfMode: 'custom',
+      equalShelfCount: 0,
+      hasBackPanel: true,
+      hasExternalLegs: legsHint.possibleExternalLegs,
+      externalLegHeightMm: legsHint.possibleExternalLegs ? 140 : undefined,
+      externalLegCount: legsHint.possibleExternalLegs ? 4 : undefined,
+      toeKickHeightMm: legsHint.possibleExternalLegs ? 0 : 70,
+      vDividers: det.vDividers,
+      hShelves: report.structuralShelves,
+      frontZones: report.autoZones,
+      furnitureProfileLabel:
+        det.confidence >= 0.5
+          ? `${modeText} (${report.autoZones.length} módulos)`
+          : 'Foto cargada — Ajusta las 4 esquinas TL/TR/BR/BL',
+      hardwareItems: nextHardware,
+      detectionSource: 'auto',
+      detectionConfidence: det.confidence,
+    });
+
+    const prefix = autoNote ? `${autoNote} · ` : '';
+    if (det.confidence < 0.5) {
+      setStatusMsg(
+        `${prefix}Confianza baja (${Math.round(det.confidence * 100)}%). Arrastra las 4 esquinas azules (TL, TR, BR, BL) exactamente sobre el cuerpo del mueble (sin pared ni patas) — al soltar cada esquina se recalcula automáticamente.`,
+      );
+    } else {
+      const handleMsg =
+        det.detectedHandles.length > 0
+          ? ` + ${det.detectedHandles.length} tirador(es)`
+          : '';
+      const legsMsg = legsHint.possibleExternalLegs
+        ? ' + patas externas detectadas'
+        : '';
+      setStatusMsg(
+        `${prefix}[${modeText} · VisionModel v${report.modelVersion}] ${Math.round(det.confidence * 100)}% confianza: ${det.vDividers.length} div. V, ${det.hShelves.length} H, ${report.autoZones.length} módulos${handleMsg}${legsMsg}.`,
+      );
+    }
+  };
+
   const loadFrontalFromUrl = (url: string, isSample = false) => {
     const img = new Image();
     img.onload = () => {
@@ -261,30 +400,69 @@ export function VectorCanvas({
       const w = img.naturalWidth;
       const h = img.naturalHeight;
       setImgSize({ w, h });
-      srcRgbaCacheRef.current = extractSourceRgba(img);
+      const srcData = extractSourceRgba(img);
+      srcRgbaCacheRef.current = srcData;
 
-      const defaultQuad: [Point2D, Point2D, Point2D, Point2D] = isSample
-        ? [
-            { x: 185, y: 85 },
-            { x: 675, y: 98 },
-            { x: 700, y: 515 },
-            { x: 165, y: 525 },
-          ]
-        : [
-            { x: Math.round(w * 0.16), y: Math.round(h * 0.14) },
-            { x: Math.round(w * 0.84), y: Math.round(h * 0.14) },
-            { x: Math.round(w * 0.84), y: Math.round(h * 0.84) },
-            { x: Math.round(w * 0.16), y: Math.round(h * 0.84) },
-          ];
-      setQuad(defaultQuad);
+      let initialQuad: [Point2D, Point2D, Point2D, Point2D];
+      let autoNote = '';
+
+      if (isSample) {
+        initialQuad = [
+          { x: 185, y: 85 },
+          { x: 675, y: 98 },
+          { x: 700, y: 515 },
+          { x: 165, y: 525 },
+        ];
+        setNeedsManualCorners(false);
+        autoNote = 'Croquis local';
+      } else {
+        // Auto-encuadrar inmediatamente al subir la foto
+        const framed = defaultVisionAgent.autoFrame({
+          rgba: srcData.rgba,
+          width: srcData.w,
+          height: srcData.h,
+        });
+        initialQuad = framed.quad;
+        if (framed.confidence >= 0.5) {
+          setNeedsManualCorners(false);
+          autoNote = `Auto-encuadre ${Math.round(framed.confidence * 100)}%`;
+        } else {
+          setNeedsManualCorners(true);
+          autoNote = 'Fondo con pared/piso (ajusta TL/TR/BR/BL con Lupa 4×)';
+        }
+      }
+
+      setQuad(initialQuad);
+      quadRef.current = initialQuad;
       setCalibPts([]);
       setHardwareMarkers([]);
       setLegHintDetected(false);
-      setStatusMsg(
-        isSample
-          ? 'Croquis local cargado (incluye patas externas y hoja A4). Pulsa "Detectar estructura" o calibra con 1 medida / A4.'
-          : 'Foto cargada. Alinea TL, TR, BR, BL sobre las 4 esquinas del cuerpo de melamina (excluyendo patas).',
-      );
+
+      if (isSample || autoNote.startsWith('Auto-encuadre')) {
+        // Fondo uniforme o croquis: ejecutar reconocimiento inmediato al subir la foto
+        executeDetectionPipeline(initialQuad, srcData, undefined, autoNote);
+      } else {
+        // Fondo con ambiente real (pared/piso): limpiar inmediatamente el preset anterior ("estantería")
+        // para no mostrar jamás una repisa falsa antes de que el usuario ajuste las 4 esquinas TL/TR/BR/BL
+        onUpdateTopology({
+          ...topology,
+          quadCorners: initialQuad,
+          shelfMode: 'custom',
+          equalShelfCount: 0,
+          vDividers: [],
+          hShelves: [],
+          frontZones: [],
+          hasExternalLegs: false,
+          hardwareItems: [],
+          furnitureProfileLabel: 'Foto con ambiente real — Arrastra TL, TR, BR, BL al cuerpo del mueble',
+          detectionSource: 'manual',
+          detectionConfidence: 0.35,
+        });
+        setDetectedModeLabel('Esperando encuadre 4 esquinas');
+        setStatusMsg(
+          'Foto con ambiente real cargada (pared/piso). Arrastra los 4 nodos azules TL, TR, BR, BL sobre las esquinas del cuerpo de melamina — al soltar cada esquina se detectará y dibujará el Plano Vectorial 2D automáticamente.',
+        );
+      }
     };
     img.src = url;
   };
@@ -293,6 +471,7 @@ export function VectorCanvas({
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
+    e.target.value = '';
     loadFrontalFromUrl(url, false);
   };
 
@@ -567,9 +746,13 @@ export function VectorCanvas({
       height: srcCache.h,
     });
     if (framed.confidence >= 0.5) {
+      setNeedsManualCorners(false);
       setQuad(framed.quad);
+      executeDetectionPipeline(framed.quad, srcCache, undefined, `Auto-encuadre ${Math.round(framed.confidence * 100)}%`);
+    } else {
+      setNeedsManualCorners(true);
+      setStatusMsg(framed.message);
     }
-    setStatusMsg(framed.message);
   };
 
   const runAutoDetection = (seedPoint?: { u: number; v: number }) => {
@@ -578,96 +761,7 @@ export function VectorCanvas({
       setStatusMsg('Primero carga una imagen válida y ubica las 4 esquinas sin cruzarlas.');
       return;
     }
-
-    // Sincronizar proporción V0 real de la foto (conservando ancho de referencia o extrapolando alto)
-    const syncedDims = defaultVisionAgent.extrapolateDimensions(
-      estimatedAspectXY,
-      'x',
-      params.targetDimensions.x,
-      params.targetDimensions.z,
-    );
-
-    const report = defaultVisionAgent.recognizeFromPhoto(
-      { rgba: srcCache.rgba, width: srcCache.w, height: srcCache.h },
-      quad,
-      { x: syncedDims.x, y: syncedDims.y },
-      params.boardThickness,
-      { seedPoint, parallaxAware: true, horizonV: 0.5, focal35mm },
-    );
-    if (!report) {
-      setStatusMsg('Cuadrilátero inválido para homografía. Separa las 4 esquinas en orden horario.');
-      return;
-    }
-
-    const det = report.detection;
-    const legsHint = report.legsHint;
-    setLegHintDetected(legsHint.possibleExternalLegs);
-
-    // Proyectar tiradores detectados sobre la foto y registrarlos en Herrajes (sin duplicar)
-    const manualHardware = (topology.hardwareItems ?? []).filter((h) => h.origen !== 'detectado');
-    const nextHardware = [...manualHardware];
-    const projectedHandles: Point2D[] = [];
-
-    if (det.detectedHandles.length > 0) {
-      for (const hPt of det.detectedHandles) {
-        const mapped = applyHomography(homography.toCanvas, { x: hPt.u, y: hPt.v });
-        if (mapped) projectedHandles.push(mapped);
-      }
-      nextHardware.push({
-        id: 'hw_tiradores_auto',
-        categoria: 'tiradores',
-        descripcion: `Tiradores / manillas detectados en frente (${det.detectedHandles.length} u.)`,
-        cantidad: det.detectedHandles.length,
-        notaCompra: `Detectados automáticamente por ${report.modelId} v${report.modelVersion}. Adquirir ${det.detectedHandles.length} tiradores aparte (no son melamina).`,
-        origen: 'detectado',
-      });
-    }
-    setHardwareMarkers(projectedHandles);
-
-    const modeText =
-      det.furnitureMode === 'closed_front'
-        ? 'Mueble Cerrado (Puertas/Cajones)'
-        : det.furnitureMode === 'mixed'
-          ? 'Mueble Mixto / Multinivel'
-          : det.furnitureMode === 'open'
-            ? 'Mueble Abierto (Estantería/Vanos)'
-            : 'Baja Confianza';
-    setDetectedModeLabel(modeText);
-
-    // Actualizar dimensiones de referencia V0 = Vf con la relación de aspecto real detectada
-    onApplyCalibratedDims(syncedDims);
-
-    onUpdateTopology({
-      ...topology,
-      aspectRatioXY: report.estimatedAspectXY,
-      quadCorners: quad,
-      homographyMatrix: report.homographyToUnit,
-      shelfMode: 'custom',
-      vDividers: det.vDividers,
-      hShelves: report.structuralShelves,
-      frontZones: det.confidence >= 0.5 ? report.autoZones : topology.frontZones,
-      furnitureProfileLabel: `${modeText} (${report.autoZones.length} módulos)`,
-      hardwareItems: nextHardware,
-      detectionSource: 'auto',
-      detectionConfidence: det.confidence,
-    });
-
-    if (det.confidence < 0.5) {
-      setStatusMsg(
-        `Confianza baja (${Math.round(det.confidence * 100)}%, interiorMatch=${Math.round(det.interiorMatch * 100)}%). Verifica que las 4 esquinas TL/TR/BR/BL enmarquen EXACTAMENTE el cuerpo del mueble (sin pared ni patas) o usa "Gotero 1 clic" / trazado manual.`,
-      );
-    } else {
-      const handleMsg =
-        det.detectedHandles.length > 0
-          ? ` + ${det.detectedHandles.length} tirador(es) registrados en Herrajes.`
-          : '.';
-      const legsMsg = legsHint.possibleExternalLegs
-        ? ' Se detectaron posibles patas externas debajo del cuerpo.'
-        : '';
-      setStatusMsg(
-        `[${modeText} · VisionModel v${report.modelVersion}] Detectado (${Math.round(det.confidence * 100)}% confianza): ${det.vDividers.length} división(es) vertical(es), ${det.hShelves.length} horizontal(es) y ${report.autoZones.length} módulo(s) frontales${handleMsg}${legsMsg} Pulsa "Siguiente → Ver Plano Vectorial 2D" para redimensionar.`,
-      );
-    }
+    executeDetectionPipeline(quad, srcCache, seedPoint);
   };
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -804,6 +898,7 @@ export function VectorCanvas({
           { ...prev[3] },
         ];
         copy[dragCornerIdx] = pt;
+        quadRef.current = copy;
         return copy;
       });
     } else {
@@ -824,13 +919,10 @@ export function VectorCanvas({
     if (dragCornerIdx !== null) {
       setDragCornerIdx(null);
       setCursorImgPt(null);
-      if (viewTab === 'frontal' && homography) {
-        onUpdateTopology({
-          ...topology,
-          aspectRatioXY: estimatedAspectXY,
-          quadCorners: quad,
-          homographyMatrix: homography.toUnit.map((r) => [...r]),
-        });
+      if (viewTab === 'frontal' && srcRgbaCacheRef.current) {
+        // Re-detectar automáticamente al soltar una esquina (NUNCA durante onPointerMove)
+        setNeedsManualCorners(false);
+        executeDetectionPipeline(quadRef.current, srcRgbaCacheRef.current);
       } else if (viewTab === 'lateral' && sideImgEl) {
         const ratioZY = defaultVisionAgent.estimateAspectRatio(
           sideQuad,
@@ -1043,6 +1135,12 @@ export function VectorCanvas({
         </div>
       </div>
 
+      {needsManualCorners && imgEl && (
+        <div className="alert-box warning">
+          <strong>Foto con ambiente real detectado (pared/piso):</strong> arrastra los 4 puntos azules <strong>TL, TR, BR, BL</strong> sobre las 4 esquinas exactas del cuerpo de melamina (excluyendo pared y patas). Al soltar cada esquina, el <strong>Plano Vectorial 2D</strong> se actualizará automáticamente.
+        </div>
+      )}
+
       {legHintDetected && !topology.hasExternalLegs && (
         <div className="alert-box warning">
           <strong>Posibles patas independientes detectadas debajo del mueble:</strong> enfoca el cuadro solo en el cuerpo de melamina y{' '}
@@ -1232,6 +1330,26 @@ export function VectorCanvas({
           <div className="mono small-note muted">
             Agente POO · Modelo v{defaultVisionAgent.getModel().version} ({defaultVisionAgent.getModel().metadata.sampleCount} regiones)
           </div>
+          {imgEl && (
+            <>
+              <strong style={{ marginTop: 8 }}>Plano Vectorial 2D (En Vivo)</strong>
+              <div
+                className="svg-preview"
+                style={{ width: '100%' }}
+                dangerouslySetInnerHTML={{ __html: liveBlueprintSvg }}
+              />
+              {onGoToBlueprint && (
+                <button
+                  type="button"
+                  className="btn-approve"
+                  style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}
+                  onClick={onGoToBlueprint}
+                >
+                  Redimensionar y Aprobar Plano →
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -179,24 +179,55 @@ function FurnitureMeshGroup({
           const [dx, dy, dz] = piece.dimensiones3D;
           const pos = piecePosition(piece);
           const sev = alertMap.get(piece.id);
-          const isBack = piece.tipo === 'fondo';
+          const isBack = piece.tipo === 'fondo' || piece.tipo === 'fondo_cajon';
+          const isDoor = piece.tipo === 'puerta';
+          const isDrawerFront = piece.tipo === 'frente_cajon';
+          const isDrawerBox = piece.tipo === 'costado_cajon' || piece.tipo === 'trasera_cajon';
+          const isTrim = piece.tipo === 'zocalo' || piece.tipo === 'faldon';
+
+          // Diferenciación visual clara en 3D entre carcasa, puertas, cajones, cajas internas y zócalos
+          const tintColor = isDoor
+            ? '#f8fafc'
+            : isDrawerFront
+              ? '#fef3c7'
+              : isDrawerBox
+                ? '#e2e8f0'
+                : isTrim
+                  ? '#94a3b8'
+                  : '#ffffff';
 
           return (
-            <mesh key={piece.id} position={pos} castShadow receiveShadow>
-              <boxGeometry args={[dx / 1000, dy / 1000, dz / 1000]} />
-              {sev ? (
-                <meshStandardMaterial
-                  color={sev === 'critical' ? '#ef4444' : '#f59e0b'}
-                  roughness={0.45}
-                />
-              ) : (
-                <meshStandardMaterial
-                  map={isBack ? textures.durolac : textures.melamine}
-                  roughness={isBack ? 0.85 : 0.55}
-                />
+            <group key={piece.id} position={pos}>
+              <mesh castShadow receiveShadow>
+                <boxGeometry args={[dx / 1000, dy / 1000, dz / 1000]} />
+                {sev ? (
+                  <meshStandardMaterial
+                    color={sev === 'critical' ? '#ef4444' : '#f59e0b'}
+                    roughness={0.45}
+                  />
+                ) : (
+                  <meshStandardMaterial
+                    map={isBack ? textures.durolac : textures.melamine}
+                    color={tintColor}
+                    roughness={isBack ? 0.85 : isDoor || isDrawerFront ? 0.42 : 0.58}
+                  />
+                )}
+                <Edges color={sev ? '#7f1d1d' : isDoor || isDrawerFront ? '#0f172a' : edgeLineColor} />
+              </mesh>
+              {/* Tirador metálico 3D sobre puertas y frentes de cajón para lectura visual inmediata */}
+              {isDoor && (
+                <mesh position={[dx / 2000 - 0.035, 0, dz / 2000 + 0.012]} castShadow>
+                  <boxGeometry args={[0.012, Math.min(0.14, (dy / 1000) * 0.25), 0.018]} />
+                  <meshStandardMaterial color="#1e293b" metalness={0.75} roughness={0.25} />
+                </mesh>
               )}
-              <Edges color={sev ? '#7f1d1d' : edgeLineColor} />
-            </mesh>
+              {isDrawerFront && (
+                <mesh position={[0, 0, dz / 2000 + 0.012]} castShadow>
+                  <boxGeometry args={[Math.min(0.16, (dx / 1000) * 0.32), 0.012, 0.018]} />
+                  <meshStandardMaterial color="#1e293b" metalness={0.75} roughness={0.25} />
+                </mesh>
+              )}
+            </group>
           );
         })}
 

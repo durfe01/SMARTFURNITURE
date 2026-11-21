@@ -522,43 +522,44 @@ export default function App() {
 
         {/* ESCENARIO CENTRAL */}
         <main className="main-stage">
-          {activeStep === 'foto' && (
-            <>
-              <VectorCanvas
-                topology={topology}
-                params={params}
-                onUpdateTopology={(next) => {
-                  setActivePreset(null);
-                  setActiveCatalogId('');
-                  setModelApproved(false);
-                  setTopology(next);
-                }}
-                onApplyCalibratedDims={(dims) => {
-                  setModelApproved(false);
-                  setParams((p) => ({
-                    ...p,
-                    referenceDimensions: { ...dims },
-                    targetDimensions: { ...dims },
-                  }));
-                }}
-                onToggleBackPanel={(checked) =>
-                  setTopology((prev) => ({ ...prev, hasBackPanel: checked }))
-                }
-                onToggleExternalLegs={handleToggleExternalLegs}
-                onAddHardwareItem={handleAddHardwareItem}
-                onSelectDepthMm={(z) => updateTargetDim('z', z)}
-              />
-              <div className="export-bar">
-                <button
-                  type="button"
-                  className="btn-approve"
-                  onClick={() => setActiveStep('vectorial')}
-                >
-                  Siguiente → Ver Plano Vectorial 2D y Redimensionar
-                </button>
-              </div>
-            </>
-          )}
+          {/* Mantener VectorCanvas montado al cambiar de paso para no perder la foto cargada ni las esquinas */}
+          <div style={{ display: activeStep === 'foto' ? 'block' : 'none' }}>
+            <VectorCanvas
+              topology={topology}
+              params={params}
+              despiece={despiece}
+              onUpdateTopology={(next) => {
+                setActivePreset(null);
+                setActiveCatalogId('');
+                setModelApproved(false);
+                setTopology(next);
+              }}
+              onApplyCalibratedDims={(dims) => {
+                setModelApproved(false);
+                setParams((p) => ({
+                  ...p,
+                  referenceDimensions: { ...dims },
+                  targetDimensions: { ...dims },
+                }));
+              }}
+              onToggleBackPanel={(checked) =>
+                setTopology((prev) => ({ ...prev, hasBackPanel: checked }))
+              }
+              onToggleExternalLegs={handleToggleExternalLegs}
+              onAddHardwareItem={handleAddHardwareItem}
+              onSelectDepthMm={(z) => updateTargetDim('z', z)}
+              onGoToBlueprint={() => setActiveStep('vectorial')}
+            />
+            <div className="export-bar" style={{ marginTop: 10 }}>
+              <button
+                type="button"
+                className="btn-approve"
+                onClick={() => setActiveStep('vectorial')}
+              >
+                Siguiente → Ver Plano Vectorial 2D y Redimensionar
+              </button>
+            </div>
+          </div>
 
           {activeStep === 'vectorial' && (
             <VectorBlueprintPanel
@@ -581,6 +582,7 @@ export default function App() {
               <VectorCanvas
                 topology={topology}
                 params={params}
+                despiece={despiece}
                 onUpdateTopology={(next) => {
                   setActivePreset(null);
                   setActiveCatalogId('');
@@ -601,6 +603,7 @@ export default function App() {
                 onToggleExternalLegs={handleToggleExternalLegs}
                 onAddHardwareItem={handleAddHardwareItem}
                 onSelectDepthMm={(z) => updateTargetDim('z', z)}
+                onGoToBlueprint={() => setActiveStep('vectorial')}
               />
               <Viewer3D
                 despiece={despiece}

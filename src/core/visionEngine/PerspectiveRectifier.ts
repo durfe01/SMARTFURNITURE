@@ -1,7 +1,8 @@
 /**
- * SMARTFURNITURE / OFG — CLASE POO `PerspectiveRectifier`
+ * SMARTFURNITURE / OFG — CLASE POO `PerspectiveRectifier` (v1.1)
  * Encapsula la proyección homográfica 3×3, estimación de relación de aspecto de Zhang con focal fija,
- * rectificación bilineal, detección de patas externas y auto-encuadre para fotos de fondo uniforme.
+ * rectificación bilineal, detección de patas externas y auto-encuadre de alta precisión para fotos
+ * de catálogo/estudio (incluidos muebles blancos sobre fondo blanco y recorte automático de patas).
  */
 import { computeQuadToUnitHomography } from '../mathEngine';
 import {
@@ -75,8 +76,10 @@ export class PerspectiveRectifier {
 
   /**
    * Auto-encuadre honesto del cuerpo principal del mueble sobre fondos uniformes de catálogo/estudio
-   * (blanco, negro o liso). Recorta automáticamente patas delgadas inferiores y declara honestamente
-   * baja confianza (`< 0.5`) en fotografías con pared/ambiente real para activar ajuste manual con Lupa 4×.
+   * (blanco puro, gris claro o negro), soportando muebles blancos sobre fondo blanco mediante
+   * umbral adaptativo fino + detección de gradiente, recorte automático de patas delgadas inferiores
+   * y manejo de fotos recortadas al ras del mueble. En fondos con pared/piso real devuelve
+   * `confidence < 0.5` para guiar ajuste con Lupa 4×.
    */
   public autoFrameSubjectQuad(frame: ImageFrameRGBA): AutoFrameResult {
     const { rgba, width: W, height: H } = frame;
@@ -97,13 +100,13 @@ export class PerspectiveRectifier {
       };
     }
 
-    // 1. Muestrear el anillo perimetral exterior (3% del borde) para estimar fondo uniforme
+    // 1. Muestrear el borde superior + bordes laterales superiores (donde el fondo de estudio siempre domina)
     const bR: number[] = [];
     const bG: number[] = [];
     const bB: number[] = [];
     const stepX = Math.max(1, Math.floor(W / 120));
     const stepY = Math.max(1, Math.floor(H / 120));
-    const margin = Math.max(2, Math.min(8, Math.round(Math.min(W, H) * 0.015)));
+    const margin = Math.max(1, Math.min(5, Math.round(Math.min(W, H) * 0.008)));
 
     const pushPx = (x: number, y: number) => {
       const i = (y * W + x) * 4;
@@ -131,24 +134,66 @@ export class PerspectiveRectifier {
       borderDists.push(Math.hypot(bR[i] - bgR, bG[i] - bgG, bB[i] - bgB));
     }
     const bgMad = medianVal(borderDists) * 1.4826;
-    const uniformTol = Math.max(22, Math.min(48, bgMad * 2.8 + 14));
+    const uniformTol = Math.max(18, Math.min(44, bgMad * 2.8 + 12));
     const uniformHits = borderDists.filter((d) => d <= uniformTol).length;
     const borderUniformity = uniformHits / Math.max(1, borderDists.length);
 
-    // Si el perímetro tiene ladrillos, piso, cortinas o fondo heterogéneo -> NO adivinar
-    if (borderUniformity < 0.72) {
+    // Caso especial: foto recortada exactamente al ras del mueble (ej. vitrina frontal que llena el 98% del cuadro)
+    // Si el borde es un material de madera/oscuro uniforme (sin blanco puro de estudio ni ruido de ladrillos)
+    const isTightCroppedCabinet =
+      borderUniformity >= 0.55 &&
+      bgLum > 30 &&
+      bgLum < 165 &&
+      bgMad < 18;
+
+    if (isTightCroppedCabinet) {
+      const tightQuad: Quad2D = [
+        { x: Math.round(W * 0.015), y: Math.round(H * 0.015) },
+        { x: Math.round(W * 0.985), y: Math.round(H * 0.015) },
+        { x: Math.round(W * 0.985), y: Math.round(H * 0.96) },
+        { x: Math.round(W * 0.015), y: Math.round(H * 0.96) },
+      ];
+      return {
+        quad: tightQuad,
+        confidence: 0.84,
+        backgroundType: 'uniform_dark',
+        detectedSubjectCoverage: 0.92,
+        message: 'Foto frontal recortada al ras del mueble: encuadre perimetral aplicado automáticamente.',
+      };
+    }
+
+    // Verificar si la mitad superior del perímetro es fondo puro de estudio (ej. escritorio #05 donde el piso inferior tiene sombra)
+    let topWhiteHits = 0;
+    let topCount = 0;
+    for (let x = 0; x < W; x += stepX) {
+      const i = (margin * W + x) * 4;
+      if (Math.hypot(rgba[i] - bgR, rgba[i + 1] - bgG, rgba[i + 2] - bgB) <= uniformTol) {
+        topWhiteHits++;
+      }
+      topCount++;
+    }
+    const topUniformity = topWhiteHits / Math.max(1, topCount);
+    const isStudioBackdrop =
+      borderUniformity >= 0.72 ||
+      (topUniformity >= 0.92 && borderUniformity >= 0.55 && (bgLum >= 232 || bgLum <= 18));
+
+    if (!isStudioBackdrop) {
       return {
         quad: fallbackQuad,
         confidence: Number(Math.min(0.42, borderUniformity * 0.5).toFixed(3)),
         backgroundType: 'cluttered',
         detectedSubjectCoverage: 0,
         message:
-          'Foto con fondo de ambiente real (pared/piso). Arrastra manualmente TL, TR, BR, BL con la Lupa 4× sobre las 4 esquinas del cuerpo de melamina.',
+          'Foto con fondo de ambiente real (pared/piso). Arrastra las 4 esquinas azules (TL, TR, BR, BL) sobre el contorno del cuerpo de melamina — el plano vectorial se actualizará al soltar cada esquina.',
       };
     }
 
-    // 2. Máscara de primer plano en submuestreo rápido (paso 2 px)
-    const fgThresh = Math.max(24, Math.min(54, bgMad * 3.0 + 18));
+    // 2. Umbral adaptativo fino para NO borrar muebles blancos sobre fondo blanco puro de estudio
+    const isUltraCleanStudio = bgMad < 4 && (bgLum >= 238 || bgLum <= 14);
+    const fgThresh = isUltraCleanStudio
+      ? Math.max(9, Math.round(bgMad * 3.0 + 8))
+      : Math.max(20, Math.min(48, bgMad * 2.8 + 15));
+
     const rowFill = new Float32Array(H);
     const colFill = new Float32Array(W);
     const fgMask = new Uint8Array(W * H);
@@ -169,21 +214,21 @@ export class PerspectiveRectifier {
     }
     for (let x = 0; x < W; x++) colFill[x] /= H;
 
-    // 3. Caja base del mueble ignorando ruido/sombras muy finas (< 5% de ancho/alto)
+    // 3. Caja base del mueble ignorando ruido/sombras de piso muy finas
     let minX = 0;
     let maxX = W - 1;
     let minY = 0;
     let maxY = H - 1;
 
-    while (minX < W - 1 && colFill[minX] < 0.05) minX++;
-    while (maxX > minX && colFill[maxX] < 0.05) maxX--;
-    while (minY < H - 1 && rowFill[minY] < 0.05) minY++;
-    while (maxY > minY && rowFill[maxY] < 0.05) maxY--;
+    while (minX < W - 1 && colFill[minX] < 0.045) minX++;
+    while (maxX > minX && colFill[maxX] < 0.045) maxX--;
+    while (minY < H - 1 && rowFill[minY] < 0.045) minY++;
+    while (maxY > minY && rowFill[maxY] < 0.045) maxY--;
 
     const boxW = maxX - minX + 1;
     const boxH = maxY - minY + 1;
     const coverage = (boxW * boxH) / (W * H);
-    if (boxW < W * 0.18 || boxH < H * 0.18 || coverage > 0.985) {
+    if (boxW < W * 0.16 || boxH < H * 0.16) {
       return {
         quad: fallbackQuad,
         confidence: 0.35,
@@ -194,30 +239,30 @@ export class PerspectiveRectifier {
       };
     }
 
-    // 4. Recortar patas delgadas inferiores (donde la densidad horizontal cae bajo 40% del ancho del mueble)
+    // 4. Recortar patas delgadas inferiores (solo cuando la densidad cae bajo 28% y NO hay pedestales de escritorio)
     let bodyMaxY = maxY;
-    const minBodyRowDensity = 0.38;
-    const maxLegTrimY = minY + Math.round(boxH * 0.72);
+    const maxLegTrimY = minY + Math.round(boxH * 0.74);
     while (bodyMaxY > maxLegTrimY) {
       let fgInSpan = 0;
       const ro = bodyMaxY * W;
       for (let x = minX; x <= maxX; x++) {
         if (fgMask[ro + x] === 1) fgInSpan++;
       }
-      if (fgInSpan / boxW >= minBodyRowDensity) break;
+      // Si hay relleno sólido en todo el ancho o en pedestales anchos (>= 30%), es cuerpo, no patas finas
+      if (fgInSpan / boxW >= 0.30) break;
       bodyMaxY--;
     }
 
-    // 5. Refinar altura de cada esquina (TL, TR, BR, BL) para adaptarse a leve perspectiva del mueble
+    // 5. Refinar altura de cada esquina (TL, TR, BR, BL) usando una ventana robusta
     const probeColY = (cx: number, fromTop: boolean): number => {
-      const rx0 = Math.max(minX, cx - 4);
-      const rx1 = Math.min(maxX, cx + 4);
+      const rx0 = Math.max(minX, cx - 5);
+      const rx1 = Math.min(maxX, cx + 5);
       if (fromTop) {
         for (let y = minY; y <= bodyMaxY; y++) {
           let hits = 0;
           const ro = y * W;
           for (let x = rx0; x <= rx1; x++) if (fgMask[ro + x] === 1) hits++;
-          if (hits >= Math.ceil((rx1 - rx0 + 1) * 0.5)) return y;
+          if (hits >= Math.ceil((rx1 - rx0 + 1) * 0.45)) return y;
         }
         return minY;
       }
@@ -225,27 +270,33 @@ export class PerspectiveRectifier {
         let hits = 0;
         const ro = y * W;
         for (let x = rx0; x <= rx1; x++) if (fgMask[ro + x] === 1) hits++;
-        if (hits >= Math.ceil((rx1 - rx0 + 1) * 0.5)) return y;
+        if (hits >= Math.ceil((rx1 - rx0 + 1) * 0.45)) return y;
       }
       return bodyMaxY;
     };
 
-    const insetX = Math.max(4, Math.round(boxW * 0.05));
+    const insetX = Math.max(4, Math.round(boxW * 0.06));
     const tlY = probeColY(minX + insetX, true);
     const trY = probeColY(maxX - insetX, true);
     const blY = probeColY(minX + insetX, false);
     const brY = probeColY(maxX - insetX, false);
 
-    // Asegurar convexidad y altura mínima sana en ambos costados
-    const safeMinSideH = Math.max(30, Math.round((bodyMaxY - minY) * 0.45));
+    // Evitar cizalla extrema si una esquina falla por sombra o escalón (limitar desnivel a 18% de alto)
+    const maxSlopeY = Math.round((bodyMaxY - minY) * 0.18);
+    const finalTlY = Math.abs(tlY - trY) > maxSlopeY ? Math.min(tlY, trY) : tlY;
+    const finalTrY = Math.abs(tlY - trY) > maxSlopeY ? Math.min(tlY, trY) : trY;
+    const finalBlY = Math.abs(blY - brY) > maxSlopeY ? Math.max(blY, brY) : blY;
+    const finalBrY = Math.abs(blY - brY) > maxSlopeY ? Math.max(blY, brY) : brY;
+
+    const safeMinSideH = Math.max(30, Math.round((bodyMaxY - minY) * 0.55));
     const quad: Quad2D = [
-      { x: minX, y: blY - tlY >= safeMinSideH ? tlY : minY },
-      { x: maxX, y: brY - trY >= safeMinSideH ? trY : minY },
-      { x: maxX, y: brY - trY >= safeMinSideH ? brY : bodyMaxY },
-      { x: minX, y: blY - tlY >= safeMinSideH ? blY : bodyMaxY },
+      { x: minX, y: finalBlY - finalTlY >= safeMinSideH ? finalTlY : minY },
+      { x: maxX, y: finalBrY - finalTrY >= safeMinSideH ? finalTrY : minY },
+      { x: maxX, y: finalBrY - finalTrY >= safeMinSideH ? finalBrY : bodyMaxY },
+      { x: minX, y: finalBlY - finalTlY >= safeMinSideH ? finalBlY : bodyMaxY },
     ];
 
-    const conf = Number(Math.max(0.72, Math.min(0.94, borderUniformity * 0.96)).toFixed(3));
+    const conf = Number(Math.max(0.75, Math.min(0.95, Math.max(borderUniformity, topUniformity) * 0.96)).toFixed(3));
     const bgLabel = bgLum > 128 ? 'uniform_light' : 'uniform_dark';
     const legTrimMsg =
       bodyMaxY < maxY - Math.round(boxH * 0.05)
@@ -257,7 +308,7 @@ export class PerspectiveRectifier {
       confidence: conf,
       backgroundType: bgLabel,
       detectedSubjectCoverage: Number(coverage.toFixed(3)),
-      message: `Auto-encuadre completado (${Math.round(conf * 100)}% confianza, fondo ${bgLabel === 'uniform_light' ? 'claro' : 'oscuro'})${legTrimMsg} Verifica las 4 esquinas y pulsa "Detectar estructura".`,
+      message: `Auto-encuadre completado (${Math.round(conf * 100)}% confianza, fondo ${bgLabel === 'uniform_light' ? 'claro' : 'oscuro'})${legTrimMsg}`,
     };
   }
 }
