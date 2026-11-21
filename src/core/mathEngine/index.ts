@@ -178,13 +178,23 @@ function resolveEdgeBanding(
   joint: ScaleAndBoardParams['cornerJointType'],
   mode: ScaleAndBoardParams['edgeBandingMode'],
 ): EdgeBandingFlags {
-  if (tipo === 'fondo') {
+  if (tipo === 'fondo' || tipo === 'fondo_cajon') {
     return { top: false, bottom: false, left: false, right: false };
+  }
+  if (tipo === 'puerta' || tipo === 'frente_cajon') {
+    // Puertas y frentes de cajón siempre llevan tapacanto en sus 4 cantos visibles
+    return { top: true, bottom: true, left: true, right: true };
   }
   if (mode === 'fullPerimeter') {
     return { top: true, bottom: true, left: true, right: true };
   }
   // visibleEdgesOnly
+  if (tipo === 'costado_cajon' || tipo === 'trasera_cajon') {
+    return { top: true, bottom: false, left: false, right: false };
+  }
+  if (tipo === 'zocalo' || tipo === 'faldon') {
+    return { top: true, bottom: true, left: false, right: false };
+  }
   if (tipo === 'cubierta' || tipo === 'base') {
     if (joint === 'topOverSides') {
       return { top: true, bottom: false, left: true, right: true };
@@ -322,26 +332,107 @@ export function calculateDespiece(
   const joint = params.cornerJointType;
   const edgeMode = params.edgeBandingMode;
 
-  // 1. CARCASA EXTERIOR (Base, Cubierta, Lateral Izq, Lateral Der)
+  // 1. CARCASA EXTERIOR (Base / Bases parciales si hay hueco de piernas, Cubierta, Lateral Izq, Lateral Der)
   const horizWidth = joint === 'topOverSides' ? xf : xInt;
   const sideHeight = joint === 'topOverSides' ? yInt : yf;
+  const frontZones = topology.frontZones ?? [];
+  const legVoidsAtBottom = frontZones.filter(
+    (z) => z.kind === 'leg_void' && z.vStart <= SEGMENT_TOUCH_TOL,
+  );
 
-  // Base (ancho = horizWidth paralelo a veta X, alto = zf profundidad)
-  pieces.push({
-    id: 'base',
-    nombre: 'Base',
-    tipo: 'base',
-    ancho: horizWidth,
-    alto: zf,
-    espesor: e,
-    cantidad: 1,
-    respectGrain: true,
-    edges: resolveEdgeBanding('base', joint, edgeMode),
-    posicion3D: [xf / 2, e / 2, zf / 2],
-    dimensiones3D: [horizWidth, e, zf],
-    rotacion3D: [0, 0, 0],
-    material: mat,
-  });
+  if (legVoidsAtBottom.length === 0) {
+    // Base corrida normal
+    pieces.push({
+      id: 'base',
+      nombre: 'Base',
+      tipo: 'base',
+      ancho: horizWidth,
+      alto: zf,
+      espesor: e,
+      cantidad: 1,
+      respectGrain: true,
+      edges: resolveEdgeBanding('base', joint, edgeMode),
+      posicion3D: [xf / 2, e / 2, zf / 2],
+      dimensiones3D: [horizWidth, e, zf],
+      rotacion3D: [0, 0, 0],
+      material: mat,
+    });
+  } else {
+    // Escritorios: omitir base en hueco de piernas y colocar faldón estructural trasero
+    const sortedVoids = [...legVoidsAtBottom].sort((a, b) => a.uStart - b.uStart);
+    let curU = 0;
+    let baseIdx = 1;
+    for (const v of sortedVoids) {
+      if (v.uStart - curU > 0.04) {
+        const bx0 = e + curU * xInt;
+        const bx1 = e + v.uStart * xInt - e / 2;
+        const bw = bx1 - bx0;
+        if (bw > e) {
+          pieces.push({
+            id: `base_pedestal_${baseIdx++}`,
+            nombre: `Base Pedestal ${baseIdx - 1}`,
+            tipo: 'base',
+            ancho: bw,
+            alto: zf,
+            espesor: e,
+            cantidad: 1,
+            respectGrain: true,
+            edges: resolveEdgeBanding('base', joint, edgeMode),
+            posicion3D: [(bx0 + bx1) / 2, e / 2, zf / 2],
+            dimensiones3D: [bw, e, zf],
+            rotacion3D: [0, 0, 0],
+            material: mat,
+          });
+        }
+      }
+      // Faldón trasero en el hueco de piernas (parte superior del vano libre)
+      const fx0 = e + v.uStart * xInt + (v.uStart > 0.02 ? e / 2 : 0);
+      const fx1 = e + v.uEnd * xInt - (v.uEnd < 0.98 ? e / 2 : 0);
+      const fw = fx1 - fx0;
+      const fTop = e + v.vEnd * yInt - e / 2;
+      const fh = Math.max(160, Math.min(360, (v.vEnd - v.vStart) * yInt * 0.45));
+      if (fw > 40 && fTop - fh > e) {
+        pieces.push({
+          id: `faldon_${v.id}`,
+          nombre: 'Faldón Trasero Escritorio',
+          tipo: 'faldon',
+          ancho: fw,
+          alto: fh,
+          espesor: e,
+          cantidad: 1,
+          respectGrain: true,
+          edges: resolveEdgeBanding('faldon', joint, edgeMode),
+          posicion3D: [(fx0 + fx1) / 2, fTop - fh / 2, e / 2],
+          dimensiones3D: [fw, fh, e],
+          rotacion3D: [0, 0, 0],
+          material: mat,
+        });
+      }
+      curU = Math.max(curU, v.uEnd);
+    }
+    if (1 - curU > 0.04) {
+      const bx0 = e + curU * xInt + e / 2;
+      const bx1 = xf - e;
+      const bw = bx1 - bx0;
+      if (bw > e) {
+        pieces.push({
+          id: `base_pedestal_${baseIdx++}`,
+          nombre: `Base Pedestal ${baseIdx - 1}`,
+          tipo: 'base',
+          ancho: bw,
+          alto: zf,
+          espesor: e,
+          cantidad: 1,
+          respectGrain: true,
+          edges: resolveEdgeBanding('base', joint, edgeMode),
+          posicion3D: [(bx0 + bx1) / 2, e / 2, zf / 2],
+          dimensiones3D: [bw, e, zf],
+          rotacion3D: [0, 0, 0],
+          material: mat,
+        });
+      }
+    }
+  }
 
   // Cubierta
   pieces.push({
@@ -659,6 +750,286 @@ export function calculateDespiece(
     }
   }
 
+  // 4B. ZONAS FRONTALES FUNCIONALES: PUERTAS Y CAJONES COMPLETOS (5 PIEZAS POR CAJÓN)
+  let autoHinges = 0;
+  let autoSlidesPairs = 0;
+  let autoGlassPanels = 0;
+  let autoFrontHandles = 0;
+  let slideNominalLenMm = 350;
+
+  for (const zone of frontZones) {
+    if (zone.kind === 'open' || zone.kind === 'leg_void') continue;
+
+    const zU0 = clamp01(Math.min(zone.uStart, zone.uEnd));
+    const zU1 = clamp01(Math.max(zone.uStart, zone.uEnd));
+    const zV0 = clamp01(Math.min(zone.vStart, zone.vEnd));
+    const zV1 = clamp01(Math.max(zone.vStart, zone.vEnd));
+
+    const zoneX0 = e + zU0 * xInt;
+    const zoneX1 = e + zU1 * xInt;
+    const zoneY0 = e + zV0 * yInt;
+    const zoneY1 = e + zV1 * yInt;
+
+    // Luz interior real descontando mitad de divisores en extremos
+    const touchesL = activeDividers.some((d) => Math.abs(d.u - zU0) <= SEGMENT_TOUCH_TOL);
+    const touchesR = activeDividers.some((d) => Math.abs(d.u - zU1) <= SEGMENT_TOUCH_TOL);
+    const xInner0 = zoneX0 + (touchesL ? e / 2 : 0);
+    const xInner1 = zoneX1 - (touchesR ? e / 2 : 0);
+    const innerW = xInner1 - xInner0;
+
+    // Cobertura exterior frontal para puerta / frente de cajón (sobrepuesto en +Z)
+    const frontX0 = zU0 <= SEGMENT_TOUCH_TOL ? 2 : zoneX0 + 1.5;
+    const frontX1 = zU1 >= 1 - SEGMENT_TOUCH_TOL ? xf - 2 : zoneX1 - 1.5;
+    const frontY0 = zV0 <= SEGMENT_TOUCH_TOL ? 2 : zoneY0 + 1.5;
+    const frontY1 = zV1 >= 1 - SEGMENT_TOUCH_TOL ? yf - 2 : zoneY1 - 1.5;
+    const frontW = frontX1 - frontX0;
+    const frontH = frontY1 - frontY0;
+    const frontMat: PieceMaterial = zone.materialOverride ?? mat;
+    const frontCz = zf + 1 + e / 2;
+
+    if (frontW <= 30 || frontH <= 30) continue;
+
+    if (
+      zone.kind === 'door_left' ||
+      zone.kind === 'door_right' ||
+      zone.kind === 'door_glass'
+    ) {
+      const label =
+        zone.label ??
+        (zone.kind === 'door_glass' ? 'Puerta Marco Vidrio' : 'Puerta');
+      pieces.push({
+        id: `puerta_${zone.id}`,
+        nombre: label,
+        tipo: 'puerta',
+        ancho: frontH, // veta vertical en puertas
+        alto: frontW,
+        espesor: e,
+        cantidad: 1,
+        respectGrain: true,
+        edges: resolveEdgeBanding('puerta', joint, edgeMode),
+        posicion3D: [(frontX0 + frontX1) / 2, (frontY0 + frontY1) / 2, frontCz],
+        dimensiones3D: [frontW, frontH, e],
+        rotacion3D: [0, 0, 0],
+        material: frontMat,
+      });
+      autoHinges += frontH > 900 ? 3 : 2;
+      autoFrontHandles += 1;
+      if (zone.kind === 'door_glass') autoGlassPanels += 1;
+    } else if (zone.kind === 'door_double') {
+      const leafW = (frontW - 3) / 2;
+      if (leafW > 25) {
+        const cxL = frontX0 + leafW / 2;
+        const cxR = frontX1 - leafW / 2;
+        for (const [suffix, cxLeaf] of [
+          ['izq', cxL],
+          ['der', cxR],
+        ] as const) {
+          pieces.push({
+            id: `puerta_${zone.id}_${suffix}`,
+            nombre: `${zone.label ?? 'Puerta Doble'} (${suffix.toUpperCase()})`,
+            tipo: 'puerta',
+            ancho: frontH,
+            alto: leafW,
+            espesor: e,
+            cantidad: 1,
+            respectGrain: true,
+            edges: resolveEdgeBanding('puerta', joint, edgeMode),
+            posicion3D: [cxLeaf, (frontY0 + frontY1) / 2, frontCz],
+            dimensiones3D: [leafW, frontH, e],
+            rotacion3D: [0, 0, 0],
+            material: frontMat,
+          });
+          autoHinges += frontH > 900 ? 3 : 2;
+          autoFrontHandles += 1;
+        }
+      }
+    } else if (zone.kind === 'drawers') {
+      const nDrawers = Math.max(1, Math.min(8, Math.round(zone.drawerCount ?? 3)));
+      const stepH = frontH / nDrawers;
+      const boxDepth = Math.max(150, Math.min(zf - 50, 450));
+      slideNominalLenMm = Math.max(250, Math.floor(boxDepth / 50) * 50);
+      const slideClearance = 13; // 13 mm por lado para corredera telescópica
+      const boxOuterW = innerW - 2 * slideClearance;
+
+      for (let d = 0; d < nDrawers; d++) {
+        const dy0 = frontY0 + d * stepH + 1.5;
+        const dy1 = frontY0 + (d + 1) * stepH - 1.5;
+        const fh = dy1 - dy0;
+        const fCy = (dy0 + dy1) / 2;
+        const dTag = `${zone.id}_c${d + 1}`;
+        const dLabel = `Cajón ${d + 1}/${nDrawers}`;
+
+        // 1) Frente de cajón (sobrepuesto en +Z)
+        pieces.push({
+          id: `frente_${dTag}`,
+          nombre: `Frente ${dLabel}`,
+          tipo: 'frente_cajon',
+          ancho: frontW, // veta horizontal
+          alto: fh,
+          espesor: e,
+          cantidad: 1,
+          respectGrain: true,
+          edges: resolveEdgeBanding('frente_cajon', joint, edgeMode),
+          posicion3D: [(frontX0 + frontX1) / 2, fCy, frontCz],
+          dimensiones3D: [frontW, fh, e],
+          rotacion3D: [0, 0, 0],
+          material: frontMat,
+        });
+
+        // 2-5) Caja interna del cajón (2 costados + trasera + fondo 3 mm) si cabe en el vano
+        const innerBandY0 = zoneY0 + (d * (zoneY1 - zoneY0)) / nDrawers;
+        const innerBandY1 = zoneY0 + ((d + 1) * (zoneY1 - zoneY0)) / nDrawers;
+        const boxH = Math.max(60, Math.min(fh - 34, innerBandY1 - innerBandY0 - 30 - backE));
+        const yBoxBase = innerBandY0 + 12 + backE;
+
+        if (boxOuterW > 2 * e + 20 && boxH >= 50 && boxDepth >= 120) {
+          const xBoxL = xInner0 + slideClearance;
+          const xBoxR = xInner1 - slideClearance;
+          const zBoxCenter = zf - 2 - boxDepth / 2;
+          const innerBackW = boxOuterW - 2 * e;
+
+          // 2) Costado izquierdo cajón
+          pieces.push({
+            id: `costado_izq_${dTag}`,
+            nombre: `Costado Izq ${dLabel}`,
+            tipo: 'costado_cajon',
+            ancho: boxDepth,
+            alto: boxH,
+            espesor: e,
+            cantidad: 1,
+            respectGrain: true,
+            edges: resolveEdgeBanding('costado_cajon', joint, edgeMode),
+            posicion3D: [xBoxL + e / 2, yBoxBase + boxH / 2, zBoxCenter],
+            dimensiones3D: [e, boxH, boxDepth],
+            rotacion3D: [0, 0, 0],
+            material: mat,
+          });
+
+          // 3) Costado derecho cajón
+          pieces.push({
+            id: `costado_der_${dTag}`,
+            nombre: `Costado Der ${dLabel}`,
+            tipo: 'costado_cajon',
+            ancho: boxDepth,
+            alto: boxH,
+            espesor: e,
+            cantidad: 1,
+            respectGrain: true,
+            edges: resolveEdgeBanding('costado_cajon', joint, edgeMode),
+            posicion3D: [xBoxR - e / 2, yBoxBase + boxH / 2, zBoxCenter],
+            dimensiones3D: [e, boxH, boxDepth],
+            rotacion3D: [0, 0, 0],
+            material: mat,
+          });
+
+          // 4) Trasera cajón (encajada entre ambos costados)
+          pieces.push({
+            id: `trasera_${dTag}`,
+            nombre: `Trasera ${dLabel}`,
+            tipo: 'trasera_cajon',
+            ancho: innerBackW,
+            alto: boxH,
+            espesor: e,
+            cantidad: 1,
+            respectGrain: true,
+            edges: resolveEdgeBanding('trasera_cajon', joint, edgeMode),
+            posicion3D: [(xBoxL + xBoxR) / 2, yBoxBase + boxH / 2, zf - 2 - boxDepth + e / 2],
+            dimensiones3D: [innerBackW, boxH, e],
+            rotacion3D: [0, 0, 0],
+            material: mat,
+          });
+
+          // 5) Fondo cajón 3 mm Durolac (clavado debajo de costados/trasera)
+          if (backE > 0) {
+            pieces.push({
+              id: `fondo_cajon_${dTag}`,
+              nombre: `Fondo 3mm ${dLabel}`,
+              tipo: 'fondo_cajon',
+              ancho: boxOuterW,
+              alto: boxDepth,
+              espesor: backE,
+              cantidad: 1,
+              respectGrain: false,
+              edges: resolveEdgeBanding('fondo_cajon', joint, edgeMode),
+              posicion3D: [(xBoxL + xBoxR) / 2, yBoxBase - backE / 2, zBoxCenter],
+              dimensiones3D: [boxOuterW, backE, boxDepth],
+              rotacion3D: [0, 0, 0],
+              material: 'durolac_3mm',
+            });
+          }
+        }
+
+        autoSlidesPairs += 1;
+        autoFrontHandles += 1;
+      }
+    }
+  }
+
+  // Zócalo inferior de melamina (si aplica y no usa patas externas)
+  if (!topology.hasExternalLegs && (topology.toeKickHeightMm ?? 0) > 0 && legVoidsAtBottom.length === 0) {
+    const tkH = Math.min(200, Math.max(40, topology.toeKickHeightMm!));
+    pieces.push({
+      id: 'zocalo_frontal',
+      nombre: 'Zócalo Frontal',
+      tipo: 'zocalo',
+      ancho: xInt,
+      alto: tkH,
+      espesor: e,
+      cantidad: 1,
+      respectGrain: true,
+      edges: resolveEdgeBanding('zocalo', joint, edgeMode),
+      posicion3D: [xf / 2, -tkH / 2, Math.max(e / 2, zf - 30)],
+      dimensiones3D: [xInt, tkH, e],
+      rotacion3D: [0, 0, 0],
+      material: mat,
+    });
+  }
+
+  // Consolidar herrajes calculados (bisagras, correderas, vidrios, tiradores si no existen)
+  if (autoHinges > 0 && !hardwareSummary.some((h) => h.categoria === 'bisagras')) {
+    hardwareSummary.push({
+      id: 'hw_bisagras_calc',
+      categoria: 'bisagras',
+      descripcion: 'Bisagras cazoleta 35 mm (cierre suave)',
+      cantidad: autoHinges,
+      medidaReferenciaMm: 35,
+      notaCompra: `Calculadas automáticamente según puertas del modelo (${autoHinges} u.).`,
+      origen: 'detectado',
+    });
+  }
+  if (autoSlidesPairs > 0 && !hardwareSummary.some((h) => h.categoria === 'correderas')) {
+    hardwareSummary.push({
+      id: 'hw_correderas_calc',
+      categoria: 'correderas',
+      descripcion: `Pares de correderas telescópicas ${slideNominalLenMm} mm`,
+      cantidad: autoSlidesPairs,
+      medidaReferenciaMm: slideNominalLenMm,
+      notaCompra: `1 par por cada cajón (${autoSlidesPairs} pares, descuento 13 mm/lado aplicado en despiece).`,
+      origen: 'detectado',
+    });
+  }
+  if (autoGlassPanels > 0 && !hardwareSummary.some((h) => h.id === 'hw_vidrios_calc')) {
+    hardwareSummary.push({
+      id: 'hw_vidrios_calc',
+      categoria: 'otro',
+      descripcion: 'Paneles de vidrio transparente 4 mm para puertas vitrina',
+      cantidad: autoGlassPanels,
+      medidaReferenciaMm: 4,
+      notaCompra: 'Insumo de vidriería externo a la melamina.',
+      origen: 'detectado',
+    });
+  }
+  if (autoFrontHandles > 0 && !hardwareSummary.some((h) => h.categoria === 'tiradores')) {
+    hardwareSummary.push({
+      id: 'hw_tiradores_calc',
+      categoria: 'tiradores',
+      descripcion: 'Tiradores / pomos para puertas y cajones',
+      cantidad: autoFrontHandles,
+      notaCompra: `Sugeridos según puertas/cajones del modelo (${autoFrontHandles} u., o usar tirador calado/uñero).`,
+      origen: 'detectado',
+    });
+  }
+
   // 5. MATRICES n×3, n×5, CONSOLIDACIÓN Y SUMATORIAS
   const matrixNx3: [number, number, number][] = pieces.map((p) => [
     p.ancho,
@@ -694,7 +1065,7 @@ export function calculateDespiece(
 
   for (const p of pieces) {
     const area = p.ancho * p.alto * p.cantidad;
-    if (p.tipo === 'fondo') {
+    if (p.tipo === 'fondo' || p.tipo === 'fondo_cajon') {
       backPanelAreaMm2 += area;
     } else {
       melamineAreaMm2 += area;

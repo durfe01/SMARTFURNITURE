@@ -52,7 +52,43 @@ export type PieceType =
   | 'lateral'
   | 'division_vertical'
   | 'repisa'
-  | 'fondo';
+  | 'fondo'
+  | 'puerta'
+  | 'frente_cajon'
+  | 'costado_cajon'
+  | 'trasera_cajon'
+  | 'fondo_cajon'
+  | 'zocalo'
+  | 'faldon';
+
+export type FrontModuleKind =
+  | 'open'
+  | 'door_left'
+  | 'door_right'
+  | 'door_double'
+  | 'door_glass'
+  | 'drawers'
+  | 'leg_void';
+
+/**
+ * Zona funcional frontal en espacio INTERIOR normalizado [0, 1]^2.
+ * Permite modelar muebles abiertos, cerrados, mixtos (puertas + cajones + nichos)
+ * y escritorios con hueco de piernas, generando despiece completo real.
+ */
+export interface FrontZone {
+  id: string;
+  uStart: number;
+  uEnd: number;
+  vStart: number;
+  vEnd: number;
+  kind: FrontModuleKind;
+  /** Cantidad de cajones cuando kind === 'drawers'. */
+  drawerCount?: number;
+  /** Repisas interiores opcionales dentro de la zona abierta/puerta. */
+  internalShelves?: number;
+  label?: string;
+  materialOverride?: MelamineMaterial;
+}
 
 export type HardwareCategory =
   | 'patas'
@@ -109,6 +145,12 @@ export interface FurnitureTopology {
   externalLegCount?: number;
   /** Accesorios o herrajes externos a la melamina (patas, tiradores, bisagras, etc.). */
   hardwareItems?: HardwareItem[];
+  /** Zonas frontales funcionales (puertas, cajones, nichos abiertos, hueco de piernas). */
+  frontZones?: FrontZone[];
+  /** Altura opcional de zócalo inferior en mm (si apoya en zócalo en vez de patas). */
+  toeKickHeightMm?: number;
+  /** Etiqueta descriptiva del tipo de mueble interpretado (para plano vectorial). */
+  furnitureProfileLabel?: string;
 }
 
 export interface ScaleAndBoardParams {

@@ -233,4 +233,38 @@ describe('SmartFurniture Bloque 1 — Motor Matemático y Homografía (v3.0)', (
     ];
     expect(computeQuadToUnitHomography(degenerate)).toBeNull();
   });
+
+  it('Despiece real de Puertas y Cajones (5 piezas/cajón + bisagras + correderas) con cero solapamiento 3D AABB', () => {
+    const { topology, params } = clonePreset('rack_tv');
+    params.targetDimensions = { x: 1800, y: 780, z: 450 };
+    params.referenceDimensions = { x: 1800, y: 780, z: 450 };
+    topology.hasBackPanel = true;
+    topology.vDividers = [
+      { id: 'd1', position: 0.25, start: 0, end: 1 },
+      { id: 'd2', position: 0.5, start: 0, end: 1 },
+      { id: 'd3', position: 0.75, start: 0, end: 1 },
+    ];
+    topology.hShelves = [];
+    topology.frontZones = [
+      { id: 'z_p1', uStart: 0, uEnd: 0.25, vStart: 0, vEnd: 1, kind: 'door_left', label: 'Puerta 1' },
+      { id: 'z_p2', uStart: 0.25, uEnd: 0.5, vStart: 0, vEnd: 1, kind: 'door_right', label: 'Puerta 2' },
+      { id: 'z_p3', uStart: 0.5, uEnd: 0.75, vStart: 0, vEnd: 1, kind: 'door_left', label: 'Puerta 3' },
+      { id: 'z_caj', uStart: 0.75, uEnd: 1, vStart: 0, vEnd: 1, kind: 'drawers', drawerCount: 3, label: 'Cajonera' },
+    ];
+
+    const res = calculateDespiece(topology, params);
+    assertNo3DOverlap(res.matrizDespiece);
+
+    // 3 puertas + 3 cajones × 5 piezas (3 frentes + 6 costados + 3 traseras + 3 fondos cajón 3 mm)
+    expect(res.matrizDespiece.filter((p) => p.tipo === 'puerta')).toHaveLength(3);
+    expect(res.matrizDespiece.filter((p) => p.tipo === 'frente_cajon')).toHaveLength(3);
+    expect(res.matrizDespiece.filter((p) => p.tipo === 'costado_cajon')).toHaveLength(6);
+    expect(res.matrizDespiece.filter((p) => p.tipo === 'trasera_cajon')).toHaveLength(3);
+    expect(res.matrizDespiece.filter((p) => p.tipo === 'fondo_cajon')).toHaveLength(3);
+
+    // Herrajes calculados automáticamente
+    expect(res.hardwareSummary.find((h) => h.categoria === 'bisagras')?.cantidad).toBe(6);
+    expect(res.hardwareSummary.find((h) => h.categoria === 'correderas')?.cantidad).toBe(3);
+    expect(res.hardwareSummary.find((h) => h.categoria === 'patas')?.cantidad).toBe(4);
+  });
 });
