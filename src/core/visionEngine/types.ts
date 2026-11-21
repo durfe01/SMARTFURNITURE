@@ -128,6 +128,34 @@ export interface IVectorRenderer {
   ): string;
 }
 
+export interface DivisionMeasureAudit {
+  readonly id: string;
+  readonly label: string;
+  readonly kind: FrontZone['kind'];
+  readonly uStart: number;
+  readonly uEnd: number;
+  readonly vStart: number;
+  readonly vEnd: number;
+  readonly widthMm: number;
+  readonly heightMm: number;
+}
+
+export interface PhotoVectorComparisonAudit {
+  readonly passCount: number;
+  readonly matchScorePct: number;
+  readonly snappedDividersCount: number;
+  readonly snappedShelvesCount: number;
+  readonly recoveredMissingDividersCount: number;
+  readonly recoveredMissingShelvesCount: number;
+  readonly prunedFalseDividersCount: number;
+  readonly widthClosureErrorMm: number;
+  readonly heightClosureErrorMm: number;
+  readonly bayWidthsMm: readonly number[];
+  readonly bandHeightsMm: readonly number[];
+  readonly zoneMeasures: readonly DivisionMeasureAudit[];
+  readonly summary: string;
+}
+
 export interface VisionRecognitionReport {
   readonly detection: BandDetectionResult;
   readonly legsHint: LowerGapHintResult;
@@ -136,6 +164,7 @@ export interface VisionRecognitionReport {
   readonly homographyToUnit: number[][];
   readonly autoZones: FrontZone[];
   readonly structuralShelves: NormalizedSegment[];
+  readonly comparisonAudit: PhotoVectorComparisonAudit;
   readonly strategyUsed: string;
   readonly modelId: string;
   readonly modelVersion: string;

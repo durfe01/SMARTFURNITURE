@@ -295,4 +295,60 @@ describe('OFG Librería POO Reutilizable de Visión, Aprendizaje y Vectorizació
     expect(xls).toContain('Resumen_U3_y_Planchas');
     expect(csv.split('\n').length).toBeGreaterThan(4);
   });
+
+  it('Etapa 1: compareAndRefineWithPhoto + computeDivisionMeasuresAudit equipara divisiones y cuadra cotas según la medida V0 del usuario (error 0 mm)', () => {
+    const cloned = clonePreset('estanteria');
+    // El usuario ingresa que el mueble original de la fotografía mide X0 = 1350 mm, Y0 = 780 mm, Z0 = 360 mm
+    const userOriginalDims = { x: 1350, y: 780, z: 360 };
+    const topology: FurnitureTopology = {
+      ...cloned.topology,
+      shelfMode: 'custom',
+      equalShelfCount: 0,
+      vDividers: [
+        { id: 'd1', position: 0.3333, start: 0, end: 1 },
+        { id: 'd2', position: 0.6667, start: 0, end: 1 },
+      ],
+      hShelves: [{ id: 's1', position: 0.5, start: 0, end: 1 }],
+      frontZones: [
+        { id: 'z1', uStart: 0, uEnd: 0.3333, vStart: 0, vEnd: 1, kind: 'door_left', label: 'Puerta 1' },
+        { id: 'z2', uStart: 0.3333, uEnd: 0.6667, vStart: 0, vEnd: 1, kind: 'drawers', drawerCount: 3, label: 'Cajonera' },
+        { id: 'z3', uStart: 0.6667, uEnd: 1, vStart: 0, vEnd: 1, kind: 'door_right', label: 'Puerta 2' },
+      ],
+    };
+
+    const audit = defaultVisionAgent.computeDivisionMeasuresAudit(
+      topology.vDividers,
+      topology.hShelves,
+      topology.frontZones ?? [],
+      userOriginalDims,
+      18,
+    );
+
+    expect(audit.bayWidthsMm).toHaveLength(3);
+    expect(audit.bandHeightsMm).toHaveLength(2);
+    expect(audit.widthClosureErrorMm).toBe(0);
+    expect(audit.heightClosureErrorMm).toBe(0);
+    // Suma de los 3 vanos + 4 espesores de 18 mm debe ser exactamente 1350 mm
+    expect(audit.bayWidthsMm.reduce((a, b) => a + b, 0) + 4 * 18).toBe(1350);
+    // Suma de los 2 niveles + 3 espesores de 18 mm debe ser exactamente 780 mm
+    expect(audit.bandHeightsMm.reduce((a, b) => a + b, 0) + 3 * 18).toBe(780);
+
+    // El SVG en modo Etapa 1 (isStage1OriginalOnly: true) debe mostrar las medidas V0 del usuario y de cada vano, sin pedir/entregar planchas 244x122
+    const paramsV0: ScaleAndBoardParams = {
+      ...cloned.params,
+      referenceDimensions: { ...userOriginalDims },
+      targetDimensions: { ...userOriginalDims },
+    };
+    const despV0 = calculateDespiece(topology, paramsV0);
+    const svgStage1 = defaultVisionAgent.vectorize(topology, paramsV0, despV0, {
+      isStage1OriginalOnly: true,
+      photoMatchScorePct: 94.5,
+    });
+
+    expect(svgStage1).toContain('Ancho X = 1350 mm');
+    expect(svgStage1).toContain('Alto Y = 780 mm');
+    expect(svgStage1).toContain(`${audit.bayWidthsMm[0]} mm`);
+    expect(svgStage1).toContain('ETAPA 1 — MUEBLE ORIGINAL DE LA FOTOGRAFÍA (V₀)');
+    expect(svgStage1).not.toContain('Planchas 244×122 cm:');
+  });
 });

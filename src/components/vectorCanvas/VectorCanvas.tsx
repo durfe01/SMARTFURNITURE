@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import type {
   DespieceResult,
+  FrontModuleKind,
+  FrontZone,
   FurnitureTopology,
   HardwareItem,
   NormalizedSegment,
@@ -29,6 +31,7 @@ import type {
 } from '../../types/contracts';
 import {
   applyHomography,
+  calculateDespiece,
   computeQuadToUnitHomography,
   exteriorToInterior,
   interiorToExterior,
@@ -36,7 +39,8 @@ import {
 import {
   rectifyImageRGBA,
 } from '../../core/vision';
-import { defaultVisionAgent } from '../../core/visionEngine';
+import { inferFrontZonesFromDetection } from '../../core/vectorBlueprint';
+import { defaultVisionAgent, type PhotoVectorComparisonAudit } from '../../core/visionEngine';
 
 interface VectorCanvasProps {
   topology: FurnitureTopology;
@@ -167,7 +171,7 @@ function generateSampleFurnitureDataUrl(): string {
 export function VectorCanvas({
   topology,
   params,
-  despiece,
+  despiece: _despiece,
   onUpdateTopology,
   onApplyCalibratedDims,
   onToggleBackPanel,
@@ -176,6 +180,7 @@ export function VectorCanvas({
   onSelectDepthMm,
   onGoToBlueprint,
 }: VectorCanvasProps) {
+  void _despiece;
   const [viewTab, setViewTab] = useState<'frontal' | 'lateral'>('frontal');
   const [showProtocol, setShowProtocol] = useState(true);
   const [imgUrl, setImgUrl] = useState<string | null>(null);
@@ -206,9 +211,10 @@ export function VectorCanvas({
   const [cursorImgPt, setCursorImgPt] = useState<Point2D | null>(null);
   const [draftLineStart, setDraftLineStart] = useState<Point2D | null>(null);
 
-  // Calibración rápida con 1 sola medida (extrapolación)
-  const [knownAxis, setKnownAxis] = useState<'x' | 'y'>('x');
-  const [knownMeasureMm, setKnownMeasureMm] = useState<number>(params.targetDimensions.x);
+  // Calibración de las dimensiones reales del Mueble Original de la Fotografía (V₀)
+  const [knownAxis, setKnownAxis] = useState<'x' | 'y' | 'both'>('x');
+  const [showOverlayOnRectified, setShowOverlayOnRectified] = useState<boolean>(true);
+  const [lastComparisonAudit, setLastComparisonAudit] = useState<PhotoVectorComparisonAudit | null>(null);
 
   // Calibración A4 por segmento [p1, p2]
   const [calibPts, setCalibPts] = useState<Point2D[]>([]);
@@ -216,7 +222,7 @@ export function VectorCanvas({
 
   // Feedback del detector
   const [statusMsg, setStatusMsg] = useState<string>(
-    'Carga una foto frontal (o el croquis local) y ajusta las 4 esquinas del cuerpo de melamina.',
+    'Etapa 1: Carga una foto frontal (o el croquis local), ajusta las 4 esquinas y verifica la equiparación Foto ↔ Vector Original (V₀).',
   );
   const [legHintDetected, setLegHintDetected] = useState<boolean>(false);
   const [needsManualCorners, setNeedsManualCorners] = useState<boolean>(false);
@@ -225,17 +231,59 @@ export function VectorCanvas({
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rectPreviewRef = useRef<HTMLCanvasElement | null>(null);
+  const rectCompareRef = useRef<HTMLCanvasElement | null>(null);
   const srcRgbaCacheRef = useRef<{ rgba: Uint8ClampedArray; w: number; h: number } | null>(null);
   const quadRef = useRef<[Point2D, Point2D, Point2D, Point2D]>(quad);
   quadRef.current = quad;
 
+  // Referencias sincronizadas para que el pipeline de visión NUNCA sobrescriba las medidas V₀ del usuario
+  const knownAxisRef = useRef<'x' | 'y' | 'both'>(knownAxis);
+  knownAxisRef.current = knownAxis;
+  const referenceDimsRef = useRef<{ x: number; y: number; z: number }>(params.referenceDimensions);
+  referenceDimsRef.current = params.referenceDimensions;
+
+  // Parámetros y despiece exclusivos del Mueble Original de la Fotografía (V₀) para Etapa 1
+  const stage1OriginalParams = useMemo<ScaleAndBoardParams>(
+    () => ({
+      ...params,
+      targetDimensions: { ...params.referenceDimensions },
+    }),
+    [params],
+  );
+
+  const stage1OriginalDespiece = useMemo(
+    () => calculateDespiece(topology, stage1OriginalParams),
+    [topology, stage1OriginalParams],
+  );
+
+  // Auditoría en vivo de las medidas en mm de cada división según las medidas V₀ del usuario
+  const liveDivisionAudit = useMemo(
+    () =>
+      defaultVisionAgent.computeDivisionMeasuresAudit(
+        topology.vDividers,
+        topology.hShelves,
+        topology.frontZones ?? [],
+        params.referenceDimensions,
+        params.boardThickness,
+      ),
+    [
+      topology.vDividers,
+      topology.hShelves,
+      topology.frontZones,
+      params.referenceDimensions,
+      params.boardThickness,
+    ],
+  );
+
   const liveBlueprintSvg = useMemo(
     () =>
-      defaultVisionAgent.vectorize(topology, params, despiece, {
-        title: topology.furnitureProfileLabel ?? 'Vista Previa Vectorial 2D',
-        stageLabel: 'MODELO VECTORIAL INTERPRETADO EN VIVO (V₀)',
+      defaultVisionAgent.vectorize(topology, stage1OriginalParams, stage1OriginalDespiece, {
+        title: topology.furnitureProfileLabel ?? 'Mueble Vectorial Original (V₀)',
+        stageLabel: 'ETAPA 1 — MODELO VECTORIAL DEL MUEBLE DE LA FOTOGRAFÍA (V₀)',
+        isStage1OriginalOnly: true,
+        photoMatchScorePct: lastComparisonAudit?.matchScorePct,
       }),
-    [topology, params, despiece],
+    [topology, stage1OriginalParams, stage1OriginalDespiece, lastComparisonAudit?.matchScorePct],
   );
 
   // Limpieza segura de URLs creadas con createObjectURL
@@ -288,14 +336,18 @@ export function VectorCanvas({
       srcCache.h,
       focal35mm,
     );
-    // Estimar ancho inicial realista según silueta (mueble bajo/ancho ~1500 mm, vertical/alto ~1000-1400 mm)
-    const baseWidth = aspect >= 1.45 ? 1600 : aspect <= 0.75 ? 900 : 1200;
-    const syncedDims = defaultVisionAgent.extrapolateDimensions(
-      aspect,
-      'x',
-      baseWidth,
-      params.targetDimensions.z,
-    );
+    // Respetar SIEMPRE la medida del mueble original V₀ ingresada por el usuario (jamás sobrescribir con valores inventados)
+    const curRef = referenceDimsRef.current;
+    const activeAxis = knownAxisRef.current;
+    const syncedDims =
+      activeAxis === 'both'
+        ? { x: curRef.x, y: curRef.y, z: curRef.z }
+        : defaultVisionAgent.extrapolateDimensions(
+            aspect,
+            activeAxis,
+            activeAxis === 'x' ? curRef.x : curRef.y,
+            curRef.z,
+          );
 
     const report = defaultVisionAgent.recognizeFromPhoto(
       { rgba: srcCache.rgba, width: srcCache.w, height: srcCache.h },
@@ -312,6 +364,7 @@ export function VectorCanvas({
     const det = report.detection;
     const legsHint = report.legsHint;
     setLegHintDetected(legsHint.possibleExternalLegs);
+    setLastComparisonAudit(report.comparisonAudit);
 
     // Proyectar tiradores detectados sobre la foto y registrarlos en Herrajes (sin duplicar)
     const manualHardware = (topology.hardwareItems ?? []).filter((h) => h.origen !== 'detectado');
@@ -387,7 +440,7 @@ export function VectorCanvas({
         ? ' + patas externas detectadas'
         : '';
       setStatusMsg(
-        `${prefix}[${modeText} · VisionModel v${report.modelVersion}] ${Math.round(det.confidence * 100)}% confianza: ${det.vDividers.length} div. V, ${det.hShelves.length} H, ${report.autoZones.length} módulos${handleMsg}${legsMsg}.`,
+        `${prefix}[${modeText} · Equiparación Foto↔Vector ${report.comparisonAudit.matchScorePct}%] V₀ = ${syncedDims.x}×${syncedDims.y}×${syncedDims.z} mm: ${det.vDividers.length} div. V, ${det.hShelves.length} div. H, ${report.autoZones.length} módulos${handleMsg}${legsMsg}.`,
       );
     }
   };
@@ -495,9 +548,10 @@ export function VectorCanvas({
     img.src = url;
   };
 
-  // Render de miniatura rectificada (liviana 220px durante arrastre, detallada 360px al soltar)
+  // Render de miniatura rectificada + canvas comparativo Foto Rectificada vs Vector V₀ con cotas superpuestas
   useEffect(() => {
     const previewCanvas = rectPreviewRef.current;
+    const compareCanvas = rectCompareRef.current;
     const srcCache = srcRgbaCacheRef.current;
     if (!previewCanvas || !srcCache || srcCache.w === 0 || !homography) return;
 
@@ -514,12 +568,117 @@ export function VectorCanvas({
       previewW,
       previewH,
     );
-    const ctx = previewCanvas.getContext('2d');
-    if (ctx) {
-      const imgData = new ImageData(new Uint8ClampedArray(rectRgba), previewW, previewH);
-      ctx.putImageData(imgData, 0, 0);
+
+    const drawRectifiedWithOverlay = (targetCanvas: HTMLCanvasElement, scaleW: number, scaleH: number) => {
+      targetCanvas.width = scaleW;
+      targetCanvas.height = scaleH;
+      const ctx = targetCanvas.getContext('2d');
+      if (!ctx) return;
+
+      if (scaleW === previewW && scaleH === previewH) {
+        const imgData = new ImageData(new Uint8ClampedArray(rectRgba), previewW, previewH);
+        ctx.putImageData(imgData, 0, 0);
+      } else {
+        const hiRgba = rectifyImageRGBA(
+          srcCache.rgba,
+          srcCache.w,
+          srcCache.h,
+          homography.toCanvas,
+          scaleW,
+          scaleH,
+        );
+        const imgData = new ImageData(new Uint8ClampedArray(hiRgba), scaleW, scaleH);
+        ctx.putImageData(imgData, 0, 0);
+      }
+
+      if (!showOverlayOnRectified) return;
+
+      const e = params.boardThickness;
+      const x0 = params.referenceDimensions.x;
+      const y0 = params.referenceDimensions.y;
+
+      // Dibujar divisores verticales del modelo vectorial sobre la foto rectificada
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = Math.max(2, scaleW / 150);
+      for (const div of topology.vDividers) {
+        const uExt = interiorToExterior(div.position, e, x0);
+        const vTop = 1 - interiorToExterior(div.end, e, y0);
+        const vBot = 1 - interiorToExterior(div.start, e, y0);
+        const px = uExt * scaleW;
+        ctx.beginPath();
+        ctx.moveTo(px, vTop * scaleH);
+        ctx.lineTo(px, vBot * scaleH);
+        ctx.stroke();
+      }
+
+      // Dibujar niveles horizontales del modelo vectorial sobre la foto rectificada
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = Math.max(2, scaleW / 150);
+      for (const sh of topology.hShelves) {
+        const py = (1 - interiorToExterior(sh.position, e, y0)) * scaleH;
+        const xStart = interiorToExterior(sh.start, e, x0) * scaleW;
+        const xEnd = interiorToExterior(sh.end, e, x0) * scaleW;
+        ctx.beginPath();
+        ctx.moveTo(xStart, py);
+        ctx.lineTo(xEnd, py);
+        ctx.stroke();
+      }
+
+      // Etiquetas de cotas en milímetros sobre la foto rectificada para comparar directo con el vector
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+      ctx.fillRect(0, 0, scaleW, 20);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px Consolas, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Foto Rectificada: X₀=${x0} mm × Y₀=${y0} mm`, scaleW / 2, 14);
+
+      // Cotas de cada vano vertical en la base de la foto rectificada
+      const uRaw = [0, ...topology.vDividers.map((d) => Math.max(0.02, Math.min(0.98, d.position))), 1].sort(
+        (a, b) => a - b,
+      );
+      const uStops: number[] = [0];
+      for (const u of uRaw) {
+        if (u - uStops[uStops.length - 1] >= 0.035) uStops.push(u);
+      }
+      if (1 - uStops[uStops.length - 1] < 0.035 && uStops.length > 1) {
+        uStops[uStops.length - 1] = 1;
+      } else if (uStops[uStops.length - 1] < 1) {
+        uStops.push(1);
+      }
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+      ctx.fillRect(0, scaleH - 20, scaleW, 20);
+      ctx.fillStyle = '#4ade80';
+      ctx.font = 'bold 10px Consolas, monospace';
+      for (let i = 0; i < uStops.length - 1; i++) {
+        const cx = ((uStops[i] + uStops[i + 1]) * 0.5) * scaleW;
+        const wMm = liveDivisionAudit.bayWidthsMm[i] ?? Math.round((uStops[i + 1] - uStops[i]) * (x0 - 2 * e));
+        if ((uStops[i + 1] - uStops[i]) * scaleW >= 36) {
+          ctx.fillText(`${wMm}mm`, cx, scaleH - 6);
+        }
+      }
+    };
+
+    drawRectifiedWithOverlay(previewCanvas, previewW, previewH);
+    if (compareCanvas && dragCornerIdx === null) {
+      const cmpW = 460;
+      const cmpH = Math.max(180, Math.min(440, Math.round(cmpW / Math.max(0.25, estimatedAspectXY))));
+      drawRectifiedWithOverlay(compareCanvas, cmpW, cmpH);
     }
-  }, [imgEl, quad, homography, estimatedAspectXY, dragCornerIdx]);
+  }, [
+    imgEl,
+    quad,
+    homography,
+    estimatedAspectXY,
+    dragCornerIdx,
+    showOverlayOnRectified,
+    topology.vDividers,
+    topology.hShelves,
+    params.boardThickness,
+    params.referenceDimensions.x,
+    params.referenceDimensions.y,
+    liveDivisionAudit.bayWidthsMm,
+  ]);
 
   // Dibujo del lienzo principal con malla proyectiva, líneas detectadas, tiradores y Lupa 4x
   useEffect(() => {
@@ -990,17 +1149,175 @@ export function VectorCanvas({
     }
   };
 
-  const handleApplySingleMeasure = () => {
+  const handleUpdateOriginalDimension = (axis: 'x' | 'y' | 'z', rawValue: number) => {
+    const clamped =
+      axis === 'z'
+        ? Math.max(200, Math.min(800, Math.round(rawValue)))
+        : Math.max(300, Math.min(2600, Math.round(rawValue)));
+
+    if (axis === 'z') {
+      const nextDims = {
+        ...params.referenceDimensions,
+        z: clamped,
+      };
+      onApplyCalibratedDims(nextDims);
+      return;
+    }
+
+    if (knownAxis === 'both') {
+      const nextDims = {
+        ...params.referenceDimensions,
+        [axis]: clamped,
+      };
+      onApplyCalibratedDims(nextDims);
+      setStatusMsg(
+        `Medidas del mueble de la fotografía (V₀) actualizadas manualmente: Ancho X₀ = ${nextDims.x} mm × Alto Y₀ = ${nextDims.y} mm × Profundidad Z₀ = ${nextDims.z} mm.`,
+      );
+      return;
+    }
+
+    // Extrapolar automáticamente la dimensión complementaria usando la proporción homográfica W/H de la foto
+    const activeAxis: 'x' | 'y' = axis;
+    if (knownAxis !== activeAxis) {
+      setKnownAxis(activeAxis);
+      knownAxisRef.current = activeAxis;
+    }
     const ext = defaultVisionAgent.extrapolateDimensions(
       estimatedAspectXY,
-      knownAxis,
-      knownMeasureMm,
-      params.targetDimensions.z,
+      activeAxis,
+      clamped,
+      params.referenceDimensions.z,
     );
     onApplyCalibratedDims(ext);
     setStatusMsg(
-      `Extrapolado desde 1 medida (${knownAxis === 'x' ? 'Ancho' : 'Alto'} = ${knownMeasureMm} mm): Cuerpo V₀ = V_f = (${ext.x} × ${ext.y} × ${ext.z}) mm.`,
+      `Medidas del mueble de la fotografía (V₀) corregidas según usuario (${activeAxis === 'x' ? 'Ancho X₀' : 'Alto Y₀'} = ${clamped} mm, proporción foto W/H = ${estimatedAspectXY.toFixed(3)}): V₀ = ${ext.x} × ${ext.y} × ${ext.z} mm.`,
     );
+  };
+
+  const handleRunPhotoVectorComparison = () => {
+    const srcCache = srcRgbaCacheRef.current;
+    if (!srcCache || srcCache.w === 0 || !homography) {
+      setStatusMsg('Carga primero una fotografía frontal para comparar Foto Rectificada ↔ Vector V₀.');
+      return;
+    }
+    const rectW = 360;
+    const rectH = Math.max(160, Math.min(480, Math.round(rectW / Math.max(0.25, estimatedAspectXY))));
+    const rectRgba = rectifyImageRGBA(
+      srcCache.rgba,
+      srcCache.w,
+      srcCache.h,
+      homography.toCanvas,
+      rectW,
+      rectH,
+    );
+
+    const currentDet = {
+      vDividers: topology.vDividers,
+      hShelves: topology.hShelves,
+      confidence: topology.detectionConfidence ?? 0.82,
+      refLum: 150,
+      interiorMatch: 1,
+      furnitureMode: 'mixed' as const,
+      detectedHandles: [],
+      detectedZones: topology.frontZones ?? [],
+    };
+
+    const refined = defaultVisionAgent.compareAndRefineWithPhoto(
+      { rgba: rectRgba, width: rectW, height: rectH },
+      currentDet,
+      { x: params.referenceDimensions.x, y: params.referenceDimensions.y },
+      params.boardThickness,
+    );
+
+    setLastComparisonAudit(refined.comparisonAudit);
+    onUpdateTopology({
+      ...topology,
+      vDividers: refined.refinedDetection.vDividers,
+      hShelves: refined.structuralShelves,
+      frontZones: refined.autoZones,
+    });
+    setStatusMsg(refined.comparisonAudit.summary);
+  };
+
+  const handleSetColumnDividersCount = (targetDivCount: number) => {
+    const nDiv = Math.max(0, Math.min(6, targetDivCount));
+    const nextDivs: NormalizedSegment[] = [];
+    for (let i = 1; i <= nDiv; i++) {
+      nextDivs.push({
+        id: `eq_vdiv_${i}`,
+        position: Number((i / (nDiv + 1)).toFixed(4)),
+        start: 0,
+        end: 1,
+      });
+    }
+    const currentZones = topology.frontZones ?? [];
+    const hasClosed = currentZones.some((z) => z.kind !== 'open');
+    const rebuiltZones = inferFrontZonesFromDetection(
+      nextDivs,
+      topology.hShelves,
+      hasClosed ? 'closed_front' : 'open',
+      [],
+    );
+    onUpdateTopology({
+      ...topology,
+      shelfMode: 'custom',
+      equalShelfCount: 0,
+      vDividers: nextDivs,
+      frontZones: rebuiltZones,
+    });
+    setStatusMsg(
+      `Divisiones verticales del mueble original (V₀) equiparadas a ${nDiv} divisor(es) (${nDiv + 1} columnas simétricas).`,
+    );
+  };
+
+  const handleSetHorizontalShelvesCount = (targetShelfCount: number) => {
+    const nSh = Math.max(0, Math.min(8, targetShelfCount));
+    const nextShelves: NormalizedSegment[] = [];
+    for (let j = 1; j <= nSh; j++) {
+      nextShelves.push({
+        id: `eq_hshelf_${j}`,
+        position: Number((j / (nSh + 1)).toFixed(4)),
+        start: 0,
+        end: 1,
+      });
+    }
+    onUpdateTopology({
+      ...topology,
+      shelfMode: 'custom',
+      equalShelfCount: 0,
+      hShelves: nextShelves,
+    });
+    setStatusMsg(
+      `Divisiones horizontales del mueble original (V₀) equiparadas a ${nSh} repisa(s)/nivel(es) (${nSh + 1} niveles).`,
+    );
+  };
+
+  const handleChangeStage1ZoneKind = (id: string, kind: FrontModuleKind) => {
+    const zones = topology.frontZones ?? [];
+    const updated: FrontZone[] = zones.map((z) =>
+      z.id === id
+        ? {
+            ...z,
+            kind,
+            drawerCount: kind === 'drawers' ? (z.drawerCount ?? 3) : undefined,
+          }
+        : z,
+    );
+    onUpdateTopology({
+      ...topology,
+      frontZones: updated,
+    });
+  };
+
+  const handleChangeStage1DrawerCount = (id: string, count: number) => {
+    const zones = topology.frontZones ?? [];
+    const updated: FrontZone[] = zones.map((z) =>
+      z.id === id ? { ...z, drawerCount: Math.max(1, Math.min(6, count)) } : z,
+    );
+    onUpdateTopology({
+      ...topology,
+      frontZones: updated,
+    });
   };
 
   const handleApplyCalibA4 = () => {
@@ -1246,27 +1563,79 @@ export function VectorCanvas({
         </div>
       )}
 
-      {/* Calibración rápida por 1 sola medida (extrapolación) + Calibración A4 */}
-      {viewTab === 'frontal' && imgEl && (
-        <div className="calib-box">
-          <strong>Calibración rápida (1 medida → extrapola todo):</strong>
+      {/* Calibración de las dimensiones reales del Mueble Original de la Fotografía (V₀) */}
+      {viewTab === 'frontal' && (
+        <div className="calib-box" style={{ flexWrap: 'wrap', gap: 10 }}>
+          <strong>Medidas del Mueble de la Fotografía (V₀):</strong>
           <select
             value={knownAxis}
-            onChange={(e) => setKnownAxis(e.target.value as 'x' | 'y')}
+            onChange={(e) => {
+              const mode = e.target.value as 'x' | 'y' | 'both';
+              setKnownAxis(mode);
+              knownAxisRef.current = mode;
+              if (mode === 'x' || mode === 'y') {
+                const ext = defaultVisionAgent.extrapolateDimensions(
+                  estimatedAspectXY,
+                  mode,
+                  mode === 'x' ? params.referenceDimensions.x : params.referenceDimensions.y,
+                  params.referenceDimensions.z,
+                );
+                onApplyCalibratedDims(ext);
+              }
+            }}
           >
-            <option value="x">Ancho total cuerpo (mm)</option>
-            <option value="y">Alto cuerpo sin patas (mm)</option>
+            <option value="x">Conozco Ancho X₀ → Calcular Alto Y₀ por foto (W/H)</option>
+            <option value="y">Conozco Alto Y₀ → Calcular Ancho X₀ por foto (W/H)</option>
+            <option value="both">Ingresar Ancho X₀ y Alto Y₀ manualmente</option>
           </select>
-          <input
-            type="number"
-            min={300}
-            max={2600}
-            value={knownMeasureMm}
-            onChange={(e) => setKnownMeasureMm(Number(e.target.value) || 800)}
-            style={{ width: 82 }}
-          />
-          <button type="button" className="btn-small" onClick={handleApplySingleMeasure}>
-            Confirmar y extrapolar
+
+          <label className="small-note">
+            <strong>Ancho Original X₀ (mm):</strong>
+            <input
+              type="number"
+              min={300}
+              max={2600}
+              step={10}
+              value={params.referenceDimensions.x}
+              onChange={(e) => handleUpdateOriginalDimension('x', Number(e.target.value) || 300)}
+              style={{ width: 82, marginLeft: 4 }}
+            />
+          </label>
+
+          <label className="small-note">
+            <strong>Alto Original Y₀ (mm):</strong>
+            <input
+              type="number"
+              min={300}
+              max={2600}
+              step={10}
+              value={params.referenceDimensions.y}
+              onChange={(e) => handleUpdateOriginalDimension('y', Number(e.target.value) || 300)}
+              style={{ width: 82, marginLeft: 4 }}
+            />
+          </label>
+
+          <label className="small-note">
+            <strong>Profundidad Z₀ (mm):</strong>
+            <input
+              type="number"
+              min={200}
+              max={800}
+              step={10}
+              value={params.referenceDimensions.z}
+              onChange={(e) => handleUpdateOriginalDimension('z', Number(e.target.value) || 200)}
+              style={{ width: 74, marginLeft: 4 }}
+            />
+          </label>
+
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={handleRunPhotoVectorComparison}
+            disabled={!imgEl || !homography}
+            title="Compara la foto rectificada con el plano vectorial V₀ y ajusta bordes y medidas"
+          >
+            Comparar Foto ↔ Vector y Auto-Corregir
           </button>
 
           {tool === 'calibA4' && (
@@ -1312,45 +1681,199 @@ export function VectorCanvas({
         />
 
         <div className="rect-preview-panel">
-          <strong>Vista Rectificada (H)</strong>
+          <strong>Vista Rectificada (H) + Divisiones V₀</strong>
           <canvas ref={rectPreviewRef} className="rect-preview-canvas" />
+          <label className="toggle-label small-note">
+            <input
+              type="checkbox"
+              checked={showOverlayOnRectified}
+              onChange={(e) => setShowOverlayOnRectified(e.target.checked)}
+            />
+            Superponer divisiones y cotas (mm)
+          </label>
           <div className="mono small-note">
-            W/H est.: <strong>{estimatedAspectXY.toFixed(3)}</strong>
+            Proporción Foto W/H: <strong>{estimatedAspectXY.toFixed(3)}</strong> · V₀: <strong>{params.referenceDimensions.x}×{params.referenceDimensions.y}×{params.referenceDimensions.z} mm</strong>
           </div>
           {conf !== undefined && topology.detectionSource === 'auto' && (
             <div className={`conf-badge ${confClass}`}>
               {detectedModeLabel ? `${detectedModeLabel} · ` : ''}
-              Confianza: {Math.round(conf * 100)}%
-              {conf < 0.5 ? ' — Trazar manual' : conf < 0.7 ? ' — Revisar' : ' — Alta'}
+              Equiparación: {lastComparisonAudit ? `${lastComparisonAudit.matchScorePct}%` : `${Math.round(conf * 100)}%`}
             </div>
           )}
           <div className="small-note muted">
-            Divisores: {topology.vDividers.length} · Repisas: {topology.hShelves.length} · Módulos: {(topology.frontZones ?? []).length}
+            Divisores V: {topology.vDividers.length} · Niveles H: {topology.hShelves.length} · Módulos: {(topology.frontZones ?? []).length}
           </div>
           <div className="mono small-note muted">
-            Agente POO · Modelo v{defaultVisionAgent.getModel().version} ({defaultVisionAgent.getModel().metadata.sampleCount} regiones)
+            Vanos X: [{liveDivisionAudit.bayWidthsMm.map((w) => `${w}mm`).join(' | ')}]
           </div>
-          {imgEl && (
-            <>
-              <strong style={{ marginTop: 8 }}>Plano Vectorial 2D (En Vivo)</strong>
-              <div
-                className="svg-preview"
-                style={{ width: '100%' }}
-                dangerouslySetInnerHTML={{ __html: liveBlueprintSvg }}
-              />
-              {onGoToBlueprint && (
-                <button
-                  type="button"
-                  className="btn-approve"
-                  style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}
-                  onClick={onGoToBlueprint}
-                >
-                  Redimensionar y Aprobar Plano →
-                </button>
-              )}
-            </>
-          )}
+          <div className="mono small-note muted">
+            Niveles Y: [{liveDivisionAudit.bandHeightsMm.map((h) => `${h}mm`).join(' | ')}]
+          </div>
         </div>
+      </div>
+
+      {/* PANEL DE COMPARACIÓN LADO A LADO ETAPA 1: FOTO RECTIFICADA vs PLANO VECTORIAL ORIGINAL V₀ */}
+      <div className="metric-card" style={{ marginTop: 14 }}>
+        <div className="card-header-row">
+          <div>
+            <h4>
+              Etapa 1 — Comparación y Equiparación: Fotografía Original Rectificada vs. Mueble Vectorial Original (V₀)
+            </h4>
+            <p className="muted small-note">
+              Compara ambas versiones del mismo mueble fotografiado. Todas las medidas atribuidas al plano vectorial (V₀ ={' '}
+              <strong>
+                {params.referenceDimensions.x} × {params.referenceDimensions.y} × {params.referenceDimensions.z} mm
+              </strong>
+              ) y a cada división interna están corregidas según tus medidas de entrada. Aún no se solicitan medidas del mueble customizado.
+            </p>
+          </div>
+          <div className="chip-row">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleRunPhotoVectorComparison}
+              disabled={!imgEl || !homography}
+            >
+              Comparar y Auto-Corregir Foto ↔ Vector
+            </button>
+            {onGoToBlueprint && (
+              <button
+                type="button"
+                className="btn-approve"
+                onClick={onGoToBlueprint}
+              >
+                Confirmar V₀ → Pasar a Etapa 2
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Vista Lado a Lado: 1. Foto Rectificada con Divisiones vs 2. Plano Vectorial Original V0 Acotado */}
+        <div className="blueprint-grid" style={{ marginTop: 8 }}>
+          <div className="blueprint-pane">
+            <div className="blueprint-pane-title">
+              1. Fotografía Original Rectificada + Divisiones y Cotas (X₀={params.referenceDimensions.x} mm × Y₀={params.referenceDimensions.y} mm)
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 260,
+                background: '#0f172a',
+                borderRadius: 6,
+                padding: 10,
+              }}
+            >
+              {imgEl ? (
+                <canvas
+                  ref={rectCompareRef}
+                  style={{ maxWidth: '100%', height: 'auto', border: '1px solid #38bdf8', borderRadius: 4 }}
+                />
+              ) : (
+                <span className="muted small-note" style={{ color: '#94a3b8' }}>
+                  Carga una fotografía frontal o el croquis local para comparar la foto rectificada con el vector V₀.
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="blueprint-pane">
+            <div className="blueprint-pane-title resized">
+              2. Mueble Vectorial Original (V₀: {params.referenceDimensions.x}×{params.referenceDimensions.y}×{params.referenceDimensions.z} mm — Cotas por División Corregidas)
+            </div>
+            <div
+              className="svg-preview"
+              dangerouslySetInnerHTML={{ __html: liveBlueprintSvg }}
+            />
+          </div>
+        </div>
+
+        {/* Controles rápidos para corregir y equiparar divisiones y módulos entre la Foto y el Vector V₀ */}
+        <div className="calib-box" style={{ marginTop: 10, flexWrap: 'wrap', gap: 10 }}>
+          <strong>Equiparar Divisiones (Foto ↔ Vector V₀):</strong>
+          <div className="chip-row">
+            <span className="small-note">Divisores Verticales ({topology.vDividers.length}):</span>
+            {[0, 1, 2, 3, 4].map((n) => (
+              <button
+                key={`vcol_${n}`}
+                type="button"
+                className={topology.vDividers.length === n ? 'chip-btn active' : 'chip-btn'}
+                onClick={() => handleSetColumnDividersCount(n)}
+                title={`Fijar ${n} divisor(es) vertical(es) (${n + 1} columnas simétricas)`}
+              >
+                {n} div ({n + 1} col)
+              </button>
+            ))}
+          </div>
+
+          <div className="chip-row">
+            <span className="small-note">Niveles Horizontales ({topology.hShelves.length}):</span>
+            {[0, 1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={`hrow_${n}`}
+                type="button"
+                className={topology.hShelves.length === n ? 'chip-btn active' : 'chip-btn'}
+                onClick={() => handleSetHorizontalShelvesCount(n)}
+                title={`Fijar ${n} repisa(s)/nivel(es) horizontal(es)`}
+              >
+                {n} rep
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tabla / Chips de Auditoría Dimensional por cada Módulo del Mueble Original V₀ */}
+        {liveDivisionAudit.zoneMeasures.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            <div className="mono small-note" style={{ marginBottom: 6 }}>
+              <strong>Verificación de Cierre Dimensional V₀:</strong>{' '}
+              Ancho X₀ = {liveDivisionAudit.bayWidthsMm.join(' + ')} + ({liveDivisionAudit.bayWidthsMm.length + 1}×{params.boardThickness}mm tablero) ={' '}
+              <strong>{params.referenceDimensions.x} mm</strong> (Error: {liveDivisionAudit.widthClosureErrorMm} mm) ·{' '}
+              Alto Y₀ = {liveDivisionAudit.bandHeightsMm.join(' + ')} + ({liveDivisionAudit.bandHeightsMm.length + 1}×{params.boardThickness}mm tablero) ={' '}
+              <strong>{params.referenceDimensions.y} mm</strong> (Error: {liveDivisionAudit.heightClosureErrorMm} mm)
+            </div>
+            <div className="zone-editor-grid">
+              {(topology.frontZones ?? []).map((z, idx) => {
+                const zm = liveDivisionAudit.zoneMeasures[idx];
+                return (
+                  <div key={z.id} className="zone-chip">
+                    <strong>
+                      {z.label ?? `Módulo ${idx + 1}`}{' '}
+                      <span className="mono" style={{ color: '#0284c7' }}>
+                        ({zm ? `${zm.widthMm}×${zm.heightMm} mm` : ''})
+                      </span>
+                    </strong>
+                    <select
+                      value={z.kind}
+                      onChange={(e) => handleChangeStage1ZoneKind(z.id, e.target.value as FrontModuleKind)}
+                    >
+                      <option value="open">Abierto (Vano)</option>
+                      <option value="door_left">Puerta (Abre Izq)</option>
+                      <option value="door_right">Puerta (Abre Der)</option>
+                      <option value="door_double">Puerta Doble</option>
+                      <option value="door_glass">Puerta con Vidrio</option>
+                      <option value="drawers">Cajonera (5 pzas/cajón)</option>
+                      <option value="leg_void">Hueco Piernas</option>
+                    </select>
+                    {z.kind === 'drawers' && (
+                      <input
+                        type="number"
+                        min={1}
+                        max={6}
+                        value={z.drawerCount ?? 3}
+                        onChange={(e) => handleChangeStage1DrawerCount(z.id, Number(e.target.value) || 1)}
+                        style={{ width: 52 }}
+                        title="Cantidad de cajones en este módulo"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

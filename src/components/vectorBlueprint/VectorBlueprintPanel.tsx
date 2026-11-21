@@ -67,7 +67,8 @@ export function VectorBlueprintPanel({
   const svgOriginal = useMemo(
     () =>
       defaultVisionAgent.vectorize(topology, originalParams, despieceOriginal, {
-        stageLabel: 'MODELO VECTORIAL ORIGINAL (INTERPRETADO V₀)',
+        stageLabel: 'MODELO VECTORIAL ORIGINAL DE LA FOTOGRAFÍA (V₀ CONFIRMADO)',
+        isStage1OriginalOnly: true,
       }),
     [topology, originalParams, despieceOriginal],
   );
@@ -75,7 +76,7 @@ export function VectorBlueprintPanel({
   const svgResized = useMemo(
     () =>
       defaultVisionAgent.vectorize(topology, params, despiece, {
-        stageLabel: 'NUEVO MODELO VECTORIAL REDIMENSIONADO (V_f)',
+        stageLabel: 'MODELO VECTORIAL CUSTOMIZADO / REDIMENSIONADO (V_f)',
         cuttingPlan,
       }),
     [topology, params, despiece, cuttingPlan],
@@ -112,9 +113,9 @@ export function VectorBlueprintPanel({
     <div className="vector-card">
       <div className="card-header-row">
         <div>
-          <h3>Paso 2 — Esquema Vectorial 2D, Redimensionamiento y Aprobación</h3>
+          <h3>Etapa 2 — Redimensionamiento al Mueble Customizado (V_f) y Aprobación para Corte</h3>
           <p className="muted small-note">
-            Verifica la interpretación vectorial del mueble original (V₀), ajusta las nuevas dimensiones (V_f) y aprueba para generar el despiece completo y planchas 244×122 cm.
+            A partir del Modelo Vectorial Original de la Fotografía (V₀: {params.referenceDimensions.x}×{params.referenceDimensions.y}×{params.referenceDimensions.z} mm) validado en la Etapa 1, ingresa aquí las nuevas medidas del mueble customizado (V_f) cuando estés listo para escalar y generar el despiece.
           </p>
         </div>
         <div className="export-bar">

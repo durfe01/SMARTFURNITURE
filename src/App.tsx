@@ -41,6 +41,7 @@ export default function App() {
   const [sheetStandard, setSheetStandard] = useState<SheetStandard>('pauta');
   const [activeStep, setActiveStep] = useState<ActiveStep>('foto');
   const [modelApproved, setModelApproved] = useState<boolean>(true);
+  const [stage1ExtrapolateByPhotoAspect, setStage1ExtrapolateByPhotoAspect] = useState<boolean>(true);
 
   const despiece = useMemo(
     () => calculateDespiece(topology, params),
@@ -92,7 +93,38 @@ export default function App() {
     }));
   };
 
+  /**
+   * En Etapa 1 (Reconocimiento y Vectorización de la Fotografía), toda modificación de medidas
+   * corrige exclusivamente las dimensiones del Mueble Original de la Fotografía (V₀) y mantiene
+   * V_f = V₀ sincronizado (sin pedir aún medidas customizadas).
+   */
+  const updateOriginalPhotoDim = (axis: 'x' | 'y' | 'z', value: number) => {
+    const clamped =
+      axis === 'z'
+        ? Math.max(200, Math.min(800, Math.round(value)))
+        : Math.max(300, Math.min(2600, Math.round(value)));
+    setModelApproved(false);
+    setParams((prev) => {
+      const nextRef = { ...prev.referenceDimensions, [axis]: clamped };
+      const aspect = Math.max(0.25, Math.min(4.0, topology.aspectRatioXY || nextRef.x / Math.max(1, nextRef.y)));
+      if (stage1ExtrapolateByPhotoAspect && axis === 'x') {
+        nextRef.y = Math.max(250, Math.min(2600, Math.round(clamped / aspect)));
+      } else if (stage1ExtrapolateByPhotoAspect && axis === 'y') {
+        nextRef.x = Math.max(250, Math.min(2600, Math.round(clamped * aspect)));
+      }
+      return {
+        ...prev,
+        referenceDimensions: nextRef,
+        targetDimensions: { ...nextRef },
+      };
+    });
+  };
+
   const updateTargetDim = (axis: 'x' | 'y' | 'z', value: number) => {
+    if (activeStep === 'foto') {
+      updateOriginalPhotoDim(axis, value);
+      return;
+    }
     const clamped =
       axis === 'z'
         ? Math.max(200, Math.min(800, value))
@@ -197,21 +229,21 @@ export default function App() {
             className={activeStep === 'foto' ? 'step-btn active' : 'step-btn'}
             onClick={() => setActiveStep('foto')}
           >
-            1. Foto &amp; Visión (Detectar)
+            1. Etapa 1: Reconocimiento y Vectorización de la Fotografía (V₀)
           </button>
           <button
             type="button"
             className={activeStep === 'vectorial' ? 'step-btn active' : 'step-btn'}
             onClick={() => setActiveStep('vectorial')}
           >
-            2. Plano Vectorial &amp; Redimensionar {!modelApproved ? '●' : '✓'}
+            2. Etapa 2: Medidas del Mueble Customizado (V_f) {!modelApproved ? '●' : '✓'}
           </button>
           <button
             type="button"
             className={activeStep === '3d' ? 'step-btn active' : 'step-btn'}
             onClick={() => setActiveStep('3d')}
           >
-            3. Despiece, 3D &amp; Planchas 244×122
+            3. Etapa 3: Despiece, 3D &amp; Planchas 244×122
           </button>
           <button
             type="button"
@@ -222,91 +254,199 @@ export default function App() {
           </button>
         </div>
         <span className="small-note muted">
-          Cuerpo: {params.targetDimensions.x}×{params.targetDimensions.y}×{params.targetDimensions.z} mm ·{' '}
-          {despiece.matrizDespiece.length} piezas · {cuttingPlan.totalSheetsCount} plancha(s) ({cuttingPlan.usagePercentage.toFixed(1)}% uso)
+          {activeStep === 'foto' ? (
+            <>
+              Etapa 1 — Mueble de la Fotografía (V₀):{' '}
+              <strong>
+                {params.referenceDimensions.x}×{params.referenceDimensions.y}×{params.referenceDimensions.z} mm
+              </strong>{' '}
+              · {topology.vDividers.length} div. V · {topology.hShelves.length} div. H ·{' '}
+              {(topology.frontZones ?? []).length} módulos
+            </>
+          ) : (
+            <>
+              Mueble Customizado (V_f): {params.targetDimensions.x}×{params.targetDimensions.y}×{params.targetDimensions.z} mm ·{' '}
+              {despiece.matrizDespiece.length} piezas · {cuttingPlan.totalSheetsCount} plancha(s) ({cuttingPlan.usagePercentage.toFixed(1)}% uso)
+            </>
+          )}
         </span>
       </nav>
 
       <div className="workspace-grid">
-        {/* PANEL LATERAL DE PARÁMETROS */}
+        {/* PANEL LATERAL DE PARÁMETROS (ADAPTADO ESTRICTAMENTE A ETAPA 1 V₀ vs ETAPA 2/3 V_f) */}
         <aside className="sidebar-controls">
-          <div className="control-group">
-            <h3>Dimensiones Cuerpo V_f (mm)</h3>
-            <div className="slider-row">
-              <div className="slider-head">
-                <label>Ancho X</label>
+          {activeStep === 'foto' ? (
+            <div className="control-group">
+              <h3>Medidas del Mueble de la Fotografía V₀ (mm)</h3>
+              <p className="muted small-note" style={{ marginBottom: 8 }}>
+                Etapa 1: Ingresa la medida real conocida del mueble fotografiado. El plano vectorial original (V₀) y sus divisiones se corrigen automáticamente según tu medida.
+              </p>
+              <label className="toggle-label" style={{ marginBottom: 8 }}>
                 <input
-                  type="number"
+                  type="checkbox"
+                  checked={stage1ExtrapolateByPhotoAspect}
+                  onChange={(e) => setStage1ExtrapolateByPhotoAspect(e.target.checked)}
+                />
+                Calcular 2.ª dimensión por proporción de la foto (W/H = {(topology.aspectRatioXY || 1).toFixed(3)})
+              </label>
+
+              <div className="slider-row">
+                <div className="slider-head">
+                  <label>Ancho Original X₀ (mm)</label>
+                  <input
+                    type="number"
+                    min={300}
+                    max={2600}
+                    value={params.referenceDimensions.x}
+                    onChange={(e) => updateOriginalPhotoDim('x', Number(e.target.value) || 300)}
+                  />
+                </div>
+                <input
+                  type="range"
                   min={300}
-                  max={2400}
-                  value={params.targetDimensions.x}
-                  onChange={(e) => updateTargetDim('x', Number(e.target.value) || 300)}
+                  max={2600}
+                  step={10}
+                  value={params.referenceDimensions.x}
+                  onChange={(e) => updateOriginalPhotoDim('x', Number(e.target.value))}
                 />
               </div>
-              <input
-                type="range"
-                min={300}
-                max={2400}
-                step={10}
-                value={params.targetDimensions.x}
-                onChange={(e) => updateTargetDim('x', Number(e.target.value))}
-              />
-            </div>
 
-            <div className="slider-row">
-              <div className="slider-head">
-                <label>Alto Y (cuerpo melamina)</label>
+              <div className="slider-row">
+                <div className="slider-head">
+                  <label>Alto Original Y₀ (cuerpo foto)</label>
+                  <input
+                    type="number"
+                    min={300}
+                    max={2600}
+                    value={params.referenceDimensions.y}
+                    onChange={(e) => updateOriginalPhotoDim('y', Number(e.target.value) || 300)}
+                  />
+                </div>
                 <input
-                  type="number"
+                  type="range"
                   min={300}
-                  max={2400}
-                  value={params.targetDimensions.y}
-                  onChange={(e) => updateTargetDim('y', Number(e.target.value) || 300)}
+                  max={2600}
+                  step={10}
+                  value={params.referenceDimensions.y}
+                  onChange={(e) => updateOriginalPhotoDim('y', Number(e.target.value))}
                 />
               </div>
-              <input
-                type="range"
-                min={300}
-                max={2400}
-                step={10}
-                value={params.targetDimensions.y}
-                onChange={(e) => updateTargetDim('y', Number(e.target.value))}
-              />
-            </div>
 
-            <div className="slider-row">
-              <div className="slider-head">
-                <label>Profundidad Z</label>
+              <div className="slider-row">
+                <div className="slider-head">
+                  <label>Profundidad Original Z₀ (mm)</label>
+                  <input
+                    type="number"
+                    min={200}
+                    max={800}
+                    value={params.referenceDimensions.z}
+                    onChange={(e) => updateOriginalPhotoDim('z', Number(e.target.value) || 200)}
+                  />
+                </div>
                 <input
-                  type="number"
+                  type="range"
                   min={200}
                   max={800}
-                  value={params.targetDimensions.z}
-                  onChange={(e) => updateTargetDim('z', Number(e.target.value) || 200)}
+                  step={10}
+                  value={params.referenceDimensions.z}
+                  onChange={(e) => updateOriginalPhotoDim('z', Number(e.target.value))}
                 />
-              </div>
-              <input
-                type="range"
-                min={200}
-                max={800}
-                step={10}
-                value={params.targetDimensions.z}
-                onChange={(e) => updateTargetDim('z', Number(e.target.value))}
-              />
-              <div className="chip-row">
-                {[320, 400, 500, 550].map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    className={params.targetDimensions.z === d ? 'chip-btn active' : 'chip-btn'}
-                    onClick={() => updateTargetDim('z', d)}
-                  >
-                    {d}
-                  </button>
-                ))}
+                <div className="chip-row">
+                  {[320, 400, 500, 550].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      className={params.referenceDimensions.z === d ? 'chip-btn active' : 'chip-btn'}
+                      onClick={() => updateOriginalPhotoDim('z', d)}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="control-group">
+              <h3>Dimensiones Mueble Customizado V_f (mm)</h3>
+              <div className="mono small-note muted" style={{ marginBottom: 6 }}>
+                Referencia Original Foto V₀: {params.referenceDimensions.x}×{params.referenceDimensions.y}×{params.referenceDimensions.z} mm
+              </div>
+              <div className="slider-row">
+                <div className="slider-head">
+                  <label>Ancho Custom X_f</label>
+                  <input
+                    type="number"
+                    min={300}
+                    max={2400}
+                    value={params.targetDimensions.x}
+                    onChange={(e) => updateTargetDim('x', Number(e.target.value) || 300)}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min={300}
+                  max={2400}
+                  step={10}
+                  value={params.targetDimensions.x}
+                  onChange={(e) => updateTargetDim('x', Number(e.target.value))}
+                />
+              </div>
+
+              <div className="slider-row">
+                <div className="slider-head">
+                  <label>Alto Custom Y_f (cuerpo)</label>
+                  <input
+                    type="number"
+                    min={300}
+                    max={2400}
+                    value={params.targetDimensions.y}
+                    onChange={(e) => updateTargetDim('y', Number(e.target.value) || 300)}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min={300}
+                  max={2400}
+                  step={10}
+                  value={params.targetDimensions.y}
+                  onChange={(e) => updateTargetDim('y', Number(e.target.value))}
+                />
+              </div>
+
+              <div className="slider-row">
+                <div className="slider-head">
+                  <label>Profundidad Custom Z_f</label>
+                  <input
+                    type="number"
+                    min={200}
+                    max={800}
+                    value={params.targetDimensions.z}
+                    onChange={(e) => updateTargetDim('z', Number(e.target.value) || 200)}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min={200}
+                  max={800}
+                  step={10}
+                  value={params.targetDimensions.z}
+                  onChange={(e) => updateTargetDim('z', Number(e.target.value))}
+                />
+                <div className="chip-row">
+                  {[320, 400, 500, 550].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      className={params.targetDimensions.z === d ? 'chip-btn active' : 'chip-btn'}
+                      onClick={() => updateTargetDim('z', d)}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="control-group">
             <h3>Estructura Interna y Patas</h3>
@@ -387,137 +527,151 @@ export default function App() {
             )}
           </div>
 
-          <div className="control-group">
-            <h3>Carpintería y Sierra</h3>
-            <label className="small-note">
-              Formato de plancha:
-              <select
-                className="select-input"
-                value={sheetStandard}
-                onChange={(e) => handleSheetStandardChange(e.target.value as SheetStandard)}
-              >
-                <option value="pauta">Estándar Pauta (2440×1220 mm)</option>
-                <option value="chile">Chile (2500×1830 + Durolac 2440×1520)</option>
-              </select>
-            </label>
-
-            <label className="small-note">
-              Encuentro en esquinas:
-              <select
-                className="select-input"
-                value={params.cornerJointType}
-                onChange={(e) =>
-                  setParams((p) => ({
-                    ...p,
-                    cornerJointType: e.target.value as ScaleAndBoardParams['cornerJointType'],
-                  }))
-                }
-              >
-                <option value="topOverSides">Cubierta sobre laterales (topOverSides)</option>
-                <option value="topBetweenSides">Cubierta entre laterales (topBetweenSides)</option>
-              </select>
-            </label>
-
-            <label className="small-note">
-              Tapacanto:
-              <select
-                className="select-input"
-                value={params.edgeBandingMode}
-                onChange={(e) =>
-                  setParams((p) => ({
-                    ...p,
-                    edgeBandingMode: e.target.value as ScaleAndBoardParams['edgeBandingMode'],
-                  }))
-                }
-              >
-                <option value="visibleEdgesOnly">Solo cantos vistos</option>
-                <option value="fullPerimeter">Perímetro completo</option>
-              </select>
-            </label>
-
-            <label className="small-note">
-              Estrategia de corte 2D:
-              <select
-                className="select-input"
-                value={params.packingStrategy ?? 'guillotine'}
-                onChange={(e) =>
-                  setParams((p) => ({
-                    ...p,
-                    packingStrategy: e.target.value as 'guillotine' | 'maxrects',
-                  }))
-                }
-              >
-                <option value="guillotine">Guillotina 2 etapas (Taller)</option>
-                <option value="maxrects">MaxRects BSSF (CNC)</option>
-              </select>
-            </label>
-
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={params.respectGrain}
-                onChange={(e) => setParams((p) => ({ ...p, respectGrain: e.target.checked }))}
-              />
-              Respetar sentido de veta (bloquea rotación 90°)
-            </label>
-
-            <div className="chip-row">
-              <label className="small-note">
-                Kerf (mm):
-                <select
-                  value={params.kerf}
-                  onChange={(e) => setParams((p) => ({ ...p, kerf: Number(e.target.value) }))}
-                  style={{ marginLeft: 4 }}
-                >
-                  <option value={3.2}>3.2</option>
-                  <option value={3.5}>3.5</option>
-                  <option value={4}>4.0</option>
-                </select>
-              </label>
-              <label className="small-note">
-                Trim (mm):
-                <select
-                  value={params.trimMm ?? 0}
-                  onChange={(e) => setParams((p) => ({ ...p, trimMm: Number(e.target.value) }))}
-                  style={{ marginLeft: 4 }}
-                >
-                  <option value={0}>0</option>
-                  <option value={10}>10</option>
-                  <option value={15}>15</option>
-                </select>
-              </label>
+          {activeStep === 'foto' ? (
+            <div className="control-group">
+              <h3>Aislamiento de Etapa 1 (V₀)</h3>
+              <p className="muted small-note">
+                Estás en la <strong>Etapa 1: Reconocimiento y Vectorización de la Fotografía</strong>.
+              </p>
+              <p className="muted small-note" style={{ marginTop: 6 }}>
+                En esta etapa solo se calibran las medidas y divisiones del <strong>mueble fotografiado (V₀)</strong>. Aún no se solicitan ni entregan medidas del mueble customizado (V_f) ni planchas de corte.
+              </p>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="control-group">
+                <h3>Carpintería y Sierra</h3>
+                <label className="small-note">
+                  Formato de plancha:
+                  <select
+                    className="select-input"
+                    value={sheetStandard}
+                    onChange={(e) => handleSheetStandardChange(e.target.value as SheetStandard)}
+                  >
+                    <option value="pauta">Estándar Pauta (2440×1220 mm)</option>
+                    <option value="chile">Chile (2500×1830 + Durolac 2440×1520)</option>
+                  </select>
+                </label>
 
-          <div className="control-group">
-            <h3>Acabado 3D y Vista Explotada</h3>
-            <div className="chip-row">
-              {(['blanco', 'roble', 'grafito'] as MelamineMaterial[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  className={params.material === m ? 'chip-btn active' : 'chip-btn'}
-                  onClick={() => setParams((p) => ({ ...p, material: m }))}
-                >
-                  {m === 'blanco' ? 'Blanco' : m === 'roble' ? 'Roble Claro' : 'Grafito'}
-                </button>
-              ))}
-            </div>
-            <div className="slider-row">
-              <div className="slider-head">
-                <label>Vista Explotada</label>
-                <strong>{Math.round(explodeFactor * 100)}%</strong>
+                <label className="small-note">
+                  Encuentro en esquinas:
+                  <select
+                    className="select-input"
+                    value={params.cornerJointType}
+                    onChange={(e) =>
+                      setParams((p) => ({
+                        ...p,
+                        cornerJointType: e.target.value as ScaleAndBoardParams['cornerJointType'],
+                      }))
+                    }
+                  >
+                    <option value="topOverSides">Cubierta sobre laterales (topOverSides)</option>
+                    <option value="topBetweenSides">Cubierta entre laterales (topBetweenSides)</option>
+                  </select>
+                </label>
+
+                <label className="small-note">
+                  Tapacanto:
+                  <select
+                    className="select-input"
+                    value={params.edgeBandingMode}
+                    onChange={(e) =>
+                      setParams((p) => ({
+                        ...p,
+                        edgeBandingMode: e.target.value as ScaleAndBoardParams['edgeBandingMode'],
+                      }))
+                    }
+                  >
+                    <option value="visibleEdgesOnly">Solo cantos vistos</option>
+                    <option value="fullPerimeter">Perímetro completo</option>
+                  </select>
+                </label>
+
+                <label className="small-note">
+                  Estrategia de corte 2D:
+                  <select
+                    className="select-input"
+                    value={params.packingStrategy ?? 'guillotine'}
+                    onChange={(e) =>
+                      setParams((p) => ({
+                        ...p,
+                        packingStrategy: e.target.value as 'guillotine' | 'maxrects',
+                      }))
+                    }
+                  >
+                    <option value="guillotine">Guillotina 2 etapas (Taller)</option>
+                    <option value="maxrects">MaxRects BSSF (CNC)</option>
+                  </select>
+                </label>
+
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={params.respectGrain}
+                    onChange={(e) => setParams((p) => ({ ...p, respectGrain: e.target.checked }))}
+                  />
+                  Respetar sentido de veta (bloquea rotación 90°)
+                </label>
+
+                <div className="chip-row">
+                  <label className="small-note">
+                    Kerf (mm):
+                    <select
+                      value={params.kerf}
+                      onChange={(e) => setParams((p) => ({ ...p, kerf: Number(e.target.value) }))}
+                      style={{ marginLeft: 4 }}
+                    >
+                      <option value={3.2}>3.2</option>
+                      <option value={3.5}>3.5</option>
+                      <option value={4}>4.0</option>
+                    </select>
+                  </label>
+                  <label className="small-note">
+                    Trim (mm):
+                    <select
+                      value={params.trimMm ?? 0}
+                      onChange={(e) => setParams((p) => ({ ...p, trimMm: Number(e.target.value) }))}
+                      style={{ marginLeft: 4 }}
+                    >
+                      <option value={0}>0</option>
+                      <option value={10}>10</option>
+                      <option value={15}>15</option>
+                    </select>
+                  </label>
+                </div>
               </div>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={explodeFactor}
-                onChange={(e) => setExplodeFactor(Number(e.target.value))}
-              />
-            </div>
-          </div>
+
+              <div className="control-group">
+                <h3>Acabado 3D y Vista Explotada</h3>
+                <div className="chip-row">
+                  {(['blanco', 'roble', 'grafito'] as MelamineMaterial[]).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      className={params.material === m ? 'chip-btn active' : 'chip-btn'}
+                      onClick={() => setParams((p) => ({ ...p, material: m }))}
+                    >
+                      {m === 'blanco' ? 'Blanco' : m === 'roble' ? 'Roble Claro' : 'Grafito'}
+                    </button>
+                  ))}
+                </div>
+                <div className="slider-row">
+                  <div className="slider-head">
+                    <label>Vista Explotada</label>
+                    <strong>{Math.round(explodeFactor * 100)}%</strong>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={explodeFactor}
+                    onChange={(e) => setExplodeFactor(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </aside>
 
         {/* ESCENARIO CENTRAL */}
@@ -556,7 +710,7 @@ export default function App() {
                 className="btn-approve"
                 onClick={() => setActiveStep('vectorial')}
               >
-                Siguiente → Ver Plano Vectorial 2D y Redimensionar
+                Confirmar Vectorización del Mueble Original (V₀) → Pasar a Etapa 2 (Medidas Customizadas V_f)
               </button>
             </div>
           </div>
@@ -638,25 +792,28 @@ export default function App() {
             </>
           )}
 
-          <MathPanel
-            despiece={despiece}
-            cuttingPlan={cuttingPlan}
-            topology={topology}
-            params={params}
-            modelApproved={modelApproved}
-            onGoToBlueprint={() => setActiveStep('vectorial')}
-            onFixReferenceV0={() =>
-              setParams((p) => ({
-                ...p,
-                referenceDimensions: { ...p.targetDimensions },
-              }))
-            }
-            onAddCenterDivider={() => {
-              if (!hasCenterDivider) handleToggleCenterDivider();
-            }}
-            onAddHardwareItem={handleAddHardwareItem}
-            onRemoveHardwareItem={handleRemoveHardwareItem}
-          />
+          {/* En Etapa 1 ('foto') NO se entregan medidas ni planchas del mueble customizado */}
+          {activeStep !== 'foto' && (
+            <MathPanel
+              despiece={despiece}
+              cuttingPlan={cuttingPlan}
+              topology={topology}
+              params={params}
+              modelApproved={modelApproved}
+              onGoToBlueprint={() => setActiveStep('vectorial')}
+              onFixReferenceV0={() =>
+                setParams((p) => ({
+                  ...p,
+                  referenceDimensions: { ...p.targetDimensions },
+                }))
+              }
+              onAddCenterDivider={() => {
+                if (!hasCenterDivider) handleToggleCenterDivider();
+              }}
+              onAddHardwareItem={handleAddHardwareItem}
+              onRemoveHardwareItem={handleRemoveHardwareItem}
+            />
+          )}
         </main>
       </div>
     </div>

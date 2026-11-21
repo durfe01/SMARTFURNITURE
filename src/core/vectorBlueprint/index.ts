@@ -97,6 +97,10 @@ export interface BlueprintRenderOptions {
   title?: string;
   stageLabel?: string;
   cuttingPlan?: CuttingPlanResult;
+  /** Cuando es true (Etapa 1), solo muestra medidas y auditoría del Mueble Original de la Fotografía (V₀), sin entregar planchas ni escalas customizadas V_f. */
+  isStage1OriginalOnly?: boolean;
+  /** Porcentaje de equiparación Foto Rectificada ↔ Plano Vectorial V₀ calculado por el agente. */
+  photoMatchScorePct?: number;
 }
 
 /**
@@ -200,7 +204,7 @@ export function renderFurnitureVectorBlueprintSvg(
     );
   }
 
-  // Zonas frontales (puertas, cajones, vidrios, nichos abiertos, hueco de piernas)
+  // Zonas frontales (puertas, cajones, vidrios, nichos abiertos, hueco de piernas) con sus medidas reales en mm
   const zones = topology.frontZones ?? [];
   for (const z of zones) {
     const zx0 = mapU(z.uStart);
@@ -209,6 +213,9 @@ export function renderFurnitureVectorBlueprintSvg(
     const zy1 = mapV(z.vStart);
     const zw = Math.max(1, zx1 - zx0);
     const zh = Math.max(1, zy1 - zy0);
+    const zWidthMm = Math.max(1, Math.round((z.uEnd - z.uStart) * xInt));
+    const zHeightMm = Math.max(1, Math.round((z.vEnd - z.vStart) * yInt));
+    const dimTag = `${zWidthMm}×${zHeightMm} mm`;
 
     if (z.kind === 'leg_void') {
       lines.push(
@@ -220,15 +227,25 @@ export function renderFurnitureVectorBlueprintSvg(
         `<rect x="${zx0.toFixed(2)}" y="${zy0.toFixed(2)}" width="${zw.toFixed(2)}" height="${fhPx.toFixed(2)}" fill="#f1f5f9" stroke="#64748b" stroke-width="1" />`,
       );
       lines.push(
-        `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy0 + zh * 0.72).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="9" fill="#64748b">HUECO PIERNAS</text>`,
+        `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy0 + zh * 0.68).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" fill="#64748b">HUECO PIERNAS</text>`,
       );
+      if (zw > 48 && zh > 30) {
+        lines.push(
+          `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy0 + zh * 0.86).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="8" font-weight="700" fill="#475569">${dimTag}</text>`,
+        );
+      }
     } else if (z.kind === 'open') {
       lines.push(
         `<rect x="${zx0.toFixed(2)}" y="${zy0.toFixed(2)}" width="${zw.toFixed(2)}" height="${zh.toFixed(2)}" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />`,
       );
       if (z.label && zw > 34 && zh > 24) {
         lines.push(
-          `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy0 + zh / 2 + 3).toFixed(1)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">${escapeXml(z.label)}</text>`,
+          `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy0 + zh / 2 - 2).toFixed(1)}" text-anchor="middle" font-family="system-ui, sans-serif" font-size="8.5" fill="#475569">${escapeXml(z.label)}</text>`,
+        );
+      }
+      if (zw > 38 && zh > 22) {
+        lines.push(
+          `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy0 + zh / 2 + 10).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="8" font-weight="700" fill="#0369a1">${dimTag}</text>`,
         );
       }
     } else if (z.kind === 'door_left' || z.kind === 'door_right' || z.kind === 'door_glass') {
@@ -258,13 +275,17 @@ export function renderFurnitureVectorBlueprintSvg(
       lines.push(
         `<line x1="${tx.toFixed(1)}" y1="${(midY - 8).toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(midY + 8).toFixed(1)}" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />`,
       );
-      if (zw > 34 && zh > 24) {
+      if (zw > 34 && zh > 28) {
         lines.push(
-          `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy1 - 8).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" fill="#0f2b4c">${escapeXml(z.label ?? 'Puerta')}</text>`,
+          `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy1 - 16).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="8.2" fill="#0f2b4c">${escapeXml(z.label ?? 'Puerta')}</text>`,
+        );
+        lines.push(
+          `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy1 - 6).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="8" font-weight="700" fill="#0369a1">${dimTag}</text>`,
         );
       }
     } else if (z.kind === 'door_double') {
       const midX = zx0 + zw / 2;
+      const leafWidthMm = Math.max(1, Math.round(zWidthMm / 2));
       for (const [lx0, lx1, isLeft] of [
         [zx0 + 2, midX - 1, true],
         [midX + 1, zx1 - 2, false],
@@ -284,9 +305,15 @@ export function renderFurnitureVectorBlueprintSvg(
           `<line x1="${tx.toFixed(1)}" y1="${(midY - 7).toFixed(1)}" x2="${tx.toFixed(1)}" y2="${(midY + 7).toFixed(1)}" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />`,
         );
       }
+      if (zw > 48 && zh > 24) {
+        lines.push(
+          `<text x="${(zx0 + zw / 2).toFixed(1)}" y="${(zy1 - 6).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="8" font-weight="700" fill="#0369a1">2×(${leafWidthMm}×${zHeightMm} mm)</text>`,
+        );
+      }
     } else if (z.kind === 'drawers') {
       const n = Math.max(1, Math.round(z.drawerCount ?? 3));
       const dh = zh / n;
+      const singleDrawerHMm = Math.max(1, Math.round(zHeightMm / n));
       for (let k = 0; k < n; k++) {
         const dy = zy0 + k * dh;
         lines.push(
@@ -299,9 +326,9 @@ export function renderFurnitureVectorBlueprintSvg(
         lines.push(
           `<line x1="${(cx - hw / 2).toFixed(1)}" y1="${cy.toFixed(1)}" x2="${(cx + hw / 2).toFixed(1)}" y2="${cy.toFixed(1)}" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />`,
         );
-        if (zw > 42 && dh > 22) {
+        if (zw > 42 && dh > 20) {
           lines.push(
-            `<text x="${cx.toFixed(1)}" y="${(dy + dh - 5).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="8" fill="#9a3412">Cajón ${k + 1} (5 pzas)</text>`,
+            `<text x="${cx.toFixed(1)}" y="${(dy + dh - 4).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="7.6" font-weight="700" fill="#9a3412">C${k + 1}: ${zWidthMm}×${singleDrawerHMm} mm</text>`,
           );
         }
       }
@@ -363,6 +390,96 @@ export function renderFurnitureVectorBlueprintSvg(
     `<text x="${(dimLeftX - 5).toFixed(1)}" y="${(frontY + fh / 2).toFixed(1)}" text-anchor="middle" transform="rotate(-90 ${(dimLeftX - 5).toFixed(1)} ${(frontY + fh / 2).toFixed(1)})" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#059669">Alto Y = ${Math.round(yf)} mm</text>`,
   );
 
+  // Cotas por división interna (cadena horizontal de vanos en mm debajo del mueble)
+  const uRawStops = [0, ...topology.vDividers.map((d) => Math.max(0.02, Math.min(0.98, d.position))), 1].sort(
+    (a, b) => a - b,
+  );
+  const uStops: number[] = [0];
+  for (const u of uRawStops) {
+    if (u - uStops[uStops.length - 1] >= 0.035) uStops.push(u);
+  }
+  if (1 - uStops[uStops.length - 1] < 0.035 && uStops.length > 1) {
+    uStops[uStops.length - 1] = 1;
+  } else if (uStops[uStops.length - 1] < 1) {
+    uStops.push(1);
+  }
+  const colCount = Math.max(1, uStops.length - 1);
+  const clearWidthTotal = Math.max(colCount, Math.round(xf) - (colCount + 1) * e);
+  const bayWidthsMm: number[] = [];
+  for (let i = 0; i < colCount; i++) {
+    bayWidthsMm.push(Math.max(1, Math.round((uStops[i + 1] - uStops[i]) * clearWidthTotal)));
+  }
+  const diffW = clearWidthTotal - bayWidthsMm.reduce((acc, v) => acc + v, 0);
+  if (bayWidthsMm.length > 0 && diffW !== 0) {
+    bayWidthsMm[0] = Math.max(1, bayWidthsMm[0] + diffW);
+  }
+
+  const dimBotY = frontY + fh + liftPx + 14;
+  for (let i = 0; i < colCount; i++) {
+    const bx0 = mapU(uStops[i]);
+    const bx1 = mapU(uStops[i + 1]);
+    const bMid = (bx0 + bx1) * 0.5;
+    lines.push(
+      `<line x1="${bx0.toFixed(1)}" y1="${dimBotY.toFixed(1)}" x2="${bx1.toFixed(1)}" y2="${dimBotY.toFixed(1)}" stroke="#0369a1" stroke-width="1.1" />`,
+    );
+    lines.push(
+      `<line x1="${bx0.toFixed(1)}" y1="${(dimBotY - 3).toFixed(1)}" x2="${bx0.toFixed(1)}" y2="${(dimBotY + 3).toFixed(1)}" stroke="#0369a1" stroke-width="1.1" />`,
+    );
+    lines.push(
+      `<line x1="${bx1.toFixed(1)}" y1="${(dimBotY - 3).toFixed(1)}" x2="${bx1.toFixed(1)}" y2="${(dimBotY + 3).toFixed(1)}" stroke="#0369a1" stroke-width="1.1" />`,
+    );
+    if (bx1 - bx0 >= 26) {
+      lines.push(
+        `<text x="${bMid.toFixed(1)}" y="${(dimBotY + 11).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" font-weight="700" fill="#0369a1">${bayWidthsMm[i]} mm</text>`,
+      );
+    }
+  }
+
+  // Cotas por nivel horizontal (a la derecha del alzado frontal)
+  const vRawStops = [0, ...topology.hShelves.map((s) => Math.max(0.02, Math.min(0.98, s.position))), 1].sort(
+    (a, b) => a - b,
+  );
+  const vStops: number[] = [0];
+  for (const v of vRawStops) {
+    if (v - vStops[vStops.length - 1] >= 0.035) vStops.push(v);
+  }
+  if (1 - vStops[vStops.length - 1] < 0.035 && vStops.length > 1) {
+    vStops[vStops.length - 1] = 1;
+  } else if (vStops[vStops.length - 1] < 1) {
+    vStops.push(1);
+  }
+  const rowCount = Math.max(1, vStops.length - 1);
+  const clearHeightTotal = Math.max(rowCount, Math.round(yf) - (rowCount + 1) * e);
+  const bandHeightsMm: number[] = [];
+  for (let j = 0; j < rowCount; j++) {
+    bandHeightsMm.push(Math.max(1, Math.round((vStops[j + 1] - vStops[j]) * clearHeightTotal)));
+  }
+  const diffH = clearHeightTotal - bandHeightsMm.reduce((acc, v) => acc + v, 0);
+  if (bandHeightsMm.length > 0 && diffH !== 0) {
+    bandHeightsMm[0] = Math.max(1, bandHeightsMm[0] + diffH);
+  }
+
+  const dimRightX = frontX + fw + 10;
+  for (let j = 0; j < rowCount; j++) {
+    const ry0 = mapV(vStops[j + 1]);
+    const ry1 = mapV(vStops[j]);
+    const rMid = (ry0 + ry1) * 0.5;
+    lines.push(
+      `<line x1="${dimRightX.toFixed(1)}" y1="${ry0.toFixed(1)}" x2="${dimRightX.toFixed(1)}" y2="${ry1.toFixed(1)}" stroke="#059669" stroke-width="1.1" />`,
+    );
+    lines.push(
+      `<line x1="${(dimRightX - 3).toFixed(1)}" y1="${ry0.toFixed(1)}" x2="${(dimRightX + 3).toFixed(1)}" y2="${ry0.toFixed(1)}" stroke="#059669" stroke-width="1.1" />`,
+    );
+    lines.push(
+      `<line x1="${(dimRightX - 3).toFixed(1)}" y1="${ry1.toFixed(1)}" x2="${(dimRightX + 3).toFixed(1)}" y2="${ry1.toFixed(1)}" stroke="#059669" stroke-width="1.1" />`,
+    );
+    if (ry1 - ry0 >= 18) {
+      lines.push(
+        `<text x="${(dimRightX + 5).toFixed(1)}" y="${(rMid + 3).toFixed(1)}" font-family="Consolas, monospace" font-size="8.2" font-weight="700" fill="#059669">${bandHeightsMm[j]}mm</text>`,
+      );
+    }
+  }
+
   // =========================================================================
   // 2. PERFIL LATERAL (PLANO ZY)
   // =========================================================================
@@ -396,7 +513,7 @@ export function renderFurnitureVectorBlueprintSvg(
   lines.push(`<text x="${(sideX + sw / 2).toFixed(1)}" y="${(dimTopY - 3).toFixed(1)}" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#7c3aed">Z = ${Math.round(zf)} mm</text>`);
 
   // =========================================================================
-  // 3. CARTELA TÉCNICA INFERIOR (RESUMEN DESPIECE, PLANCHAS 244×122 Y HERRAJES)
+  // 3. CARTELA TÉCNICA INFERIOR (ADAPTADA SEGÚN ETAPA 1 V₀ vs ETAPA 2/3 V_f)
   // =========================================================================
   const doorCount = despiece.matrizDespiece.filter((p) => p.tipo === 'puerta').length;
   const drawerCount = despiece.matrizDespiece.filter((p) => p.tipo === 'frente_cajon').length;
@@ -406,23 +523,46 @@ export function renderFurnitureVectorBlueprintSvg(
     despiece.hardwareSummary
       .map((h) => `${h.categoria}: ${h.cantidad}`)
       .join(' · ') || 'Sin herrajes adicionales';
-  const planText = opts.cuttingPlan
-    ? `Planchas 244×122 cm: ${opts.cuttingPlan.melamineSheetsCount} melamina + ${opts.cuttingPlan.backPanelSheetsCount} fondo 3mm · Uso ${opts.cuttingPlan.usagePercentage.toFixed(1)}%`
-    : `Área neta: ${despiece.totalNetAreaM2.toFixed(2)} m² · Tapacanto: ${despiece.totalEdgeBandingMeters.toFixed(1)} m`;
 
   lines.push(`<rect x="18" y="446" width="${svgW - 36}" height="80" fill="#f8fafc" stroke="#0f2b4c" stroke-width="1.2" rx="4" />`);
-  lines.push(
-    `<text x="30" y="466" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#0f2b4c">RESUMEN DE DESPIECE: ${melPieces} piezas melamina (${e} mm) · ${backPieces} piezas fondo 3 mm · ${doorCount} puerta(s) · ${drawerCount} cajón(es) [5 pzas/cajón]</text>`,
-  );
-  lines.push(
-    `<text x="30" y="486" font-family="Consolas, monospace" font-size="10.5" fill="#0369a1">${escapeXml(planText)} · Escala k=(${despiece.scaleFactors.kx.toFixed(2)}, ${despiece.scaleFactors.ky.toFixed(2)}, ${despiece.scaleFactors.kz.toFixed(2)})</text>`,
-  );
-  lines.push(
-    `<text x="30" y="506" font-family="Consolas, monospace" font-size="10" fill="#92400e">HERRAJES (NO MELAMINA): ${escapeXml(hwText)}</text>`,
-  );
-  lines.push(
-    `<text x="${svgW - 30}" y="518" text-anchor="end" font-family="Consolas, monospace" font-size="9" fill="#64748b">Alertas estructurales: ${despiece.alerts.length} · 100% Offline SmartFurniture v3.2</text>`,
-  );
+
+  if (opts.isStage1OriginalOnly) {
+    const matchTxt =
+      opts.photoMatchScorePct !== undefined
+        ? ` · Equiparación Foto↔Vector: ${opts.photoMatchScorePct.toFixed(1)}%`
+        : '';
+    const baysTxt = bayWidthsMm.map((w, i) => `V${i + 1}=${w}mm`).join(' + ');
+    const bandsTxt = bandHeightsMm.map((h, j) => `N${j + 1}=${h}mm`).join(' + ');
+    lines.push(
+      `<text x="30" y="466" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#0f2b4c">ETAPA 1 — MUEBLE ORIGINAL DE LA FOTOGRAFÍA (V₀): ${Math.round(xf)} × ${Math.round(yf)} × ${Math.round(zf)} mm (Tablero e=${e} mm)${escapeXml(matchTxt)}</text>`,
+    );
+    lines.push(
+      `<text x="30" y="486" font-family="Consolas, monospace" font-size="10.2" fill="#0369a1">COTAS INTERNAS CORREGIDAS: Vanos X [${escapeXml(baysTxt)}] + ${colCount + 1}×${e}mm = ${Math.round(xf)}mm · Niveles Y [${escapeXml(bandsTxt)}] + ${rowCount + 1}×${e}mm = ${Math.round(yf)}mm</text>`,
+    );
+    lines.push(
+      `<text x="30" y="506" font-family="Consolas, monospace" font-size="10" fill="#92400e">ESTRUCTURA DETECTADA EN FOTO: ${topology.vDividers.length} div. V · ${topology.hShelves.length} div. H · ${doorCount} puerta(s) · ${drawerCount} cajón(es) · ${escapeXml(hwText)}</text>`,
+    );
+    lines.push(
+      `<text x="${svgW - 30}" y="518" text-anchor="end" font-family="Consolas, monospace" font-size="9" fill="#64748b">Etapa 1: Solo Reconocimiento y Vectorización de la Fotografía (V₀) · Sin medidas customizadas</text>`,
+    );
+  } else {
+    const planText = opts.cuttingPlan
+      ? `Planchas 244×122 cm: ${opts.cuttingPlan.melamineSheetsCount} melamina + ${opts.cuttingPlan.backPanelSheetsCount} fondo 3mm · Uso ${opts.cuttingPlan.usagePercentage.toFixed(1)}%`
+      : `Área neta: ${despiece.totalNetAreaM2.toFixed(2)} m² · Tapacanto: ${despiece.totalEdgeBandingMeters.toFixed(1)} m`;
+
+    lines.push(
+      `<text x="30" y="466" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#0f2b4c">RESUMEN DE DESPIECE: ${melPieces} piezas melamina (${e} mm) · ${backPieces} piezas fondo 3 mm · ${doorCount} puerta(s) · ${drawerCount} cajón(es) [5 pzas/cajón]</text>`,
+    );
+    lines.push(
+      `<text x="30" y="486" font-family="Consolas, monospace" font-size="10.5" fill="#0369a1">${escapeXml(planText)} · Escala k=(${despiece.scaleFactors.kx.toFixed(2)}, ${despiece.scaleFactors.ky.toFixed(2)}, ${despiece.scaleFactors.kz.toFixed(2)})</text>`,
+    );
+    lines.push(
+      `<text x="30" y="506" font-family="Consolas, monospace" font-size="10" fill="#92400e">HERRAJES (NO MELAMINA): ${escapeXml(hwText)}</text>`,
+    );
+    lines.push(
+      `<text x="${svgW - 30}" y="518" text-anchor="end" font-family="Consolas, monospace" font-size="9" fill="#64748b">Alertas estructurales: ${despiece.alerts.length} · 100% Offline SmartFurniture v3.6</text>`,
+    );
+  }
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" width="100%">`,
