@@ -126,24 +126,25 @@ const srv = await createServer({
 });
 
 try {
-  const homM = await srv.ssrLoadModule('/src/core/mathEngine/homography.ts');
-  const visM = await srv.ssrLoadModule('/src/core/vision/index.ts');
+  const engM = await srv.ssrLoadModule('/src/core/visionEngine/index.ts');
+  const agent = engM.defaultVisionAgent;
 
   let sumScore = 0;
   let sumStandard12 = 0;
-  console.log('| # | Archivo | Mode (Pred/GT) | Conf | vDiv (P/GT) | hLine (P/GT) | Handles | Legs | Score |');
-  console.log('|---|---|---|---|---|---|---|---|---|');
+  console.log(`Agente POO activo: ${agent.getModel().id} v${agent.getModel().version} (${agent.getModel().metadata.sampleCount} regiones entrenadas, LOFO CV: ${agent.getModel().metadata.lofoCrossValAccuracyPct}%)`);
+  console.log('| # | Archivo | Mode (Pred/GT) | Conf | vDiv (P/GT) | hLine (P/GT) | Handles | Legs | AutoFrame | Score |');
+  console.log('|---|---|---|---|---|---|---|---|---|---|');
 
   for (const c of BENCHMARK_CASES) {
     const [srcW, srcH] = meta[c.file];
     const buf = fs.readFileSync(path.join(RAW_DIR, c.file + '.raw'));
     const srcRgba = new Uint8ClampedArray(buf.buffer, buf.byteOffset, buf.byteLength);
     const quad = c.quadN.map(([nx, ny]) => ({ x: nx * srcW, y: ny * srcH }));
-    const hom = homM.computeQuadToUnitHomography(quad);
-    const sz = visM.computeRectifiedSize(c.dims.x, c.dims.y, 18);
-    const rect = visM.rectifyImageRGBA(srcRgba, srcW, srcH, hom.toCanvas, sz.width, sz.height);
-    const det = visM.analyzeRectifiedFurniture(rect, sz.width, sz.height, c.dims, 18);
-    const legs = visM.detectLowerGapHint(srcRgba, srcW, srcH, quad);
+    const frame = { rgba: srcRgba, width: srcW, height: srcH };
+    const report = agent.recognizeFromPhoto(frame, quad, c.dims, 18);
+    const det = report.detection;
+    const legs = report.legsHint;
+    const af = agent.autoFrame(frame);
 
     const sV = scoreCount(det.vDividers.length, c.gt.vDivs);
     const sH = scoreCount(det.hShelves.length, c.gt.hLines);
@@ -153,7 +154,7 @@ try {
     if (c.id !== '02' && c.id !== '12') sumStandard12 += score;
 
     console.log(
-      `| ${c.id} | ${c.file.slice(0, 24)} | ${det.furnitureMode}/${c.gt.mode} | ${Math.round(det.confidence * 100)}% | ${det.vDividers.length}/${c.gt.vDivs} | ${det.hShelves.length}/${c.gt.hLines} | ${det.detectedHandles.length} | ${legs.possibleExternalLegs} | ${score}% |`,
+      `| ${c.id} | ${c.file.slice(0, 24)} | ${det.furnitureMode}/${c.gt.mode} | ${Math.round(det.confidence * 100)}% | ${det.vDividers.length}/${c.gt.vDivs} | ${det.hShelves.length}/${c.gt.hLines} | ${det.detectedHandles.length} | ${legs.possibleExternalLegs} | ${af.backgroundType === 'cluttered' ? 'manual' : Math.round(af.confidence * 100) + '%'} | ${score}% |`,
     );
   }
 
