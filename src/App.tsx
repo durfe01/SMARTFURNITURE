@@ -1,9 +1,13 @@
 /**
- * SMARTFURNITURE v3.0 — APLICACIÓN PRINCIPAL 100% LOCAL Y OFFLINE
- * Flujo de 4 pasos + 3 Presets oficiales + Vista Dividida Foto <-> 3D + Exportación Excel/CSV/SVG.
+ * SMARTFURNITURE v3.2 — APLICACIÓN PRINCIPAL 100% LOCAL Y OFFLINE
+ * Flujo completo:
+ *   1. Foto & Visión (Detectar) ->
+ *   2. Plano Vectorial 2D Original vs. Redimensionado (Aprobación del Usuario) ->
+ *   3. Despiece Completo (incl. Puertas y Cajones 5-piezas), Visor 3D y Planchas 244×122 cm.
  */
 import { useMemo, useState } from 'react';
 import type {
+  FrontZone,
   FurnitureTopology,
   HardwareItem,
   MelamineMaterial,
@@ -18,21 +22,25 @@ import {
   type PresetKey,
 } from './core/mathEngine';
 import { generateCuttingPlan } from './core/cuttingStock';
+import { CATALOG_14_MUEBLES, cloneCatalogFurniture } from './core/vectorBlueprint/catalog14';
 import { Viewer3D } from './components/viewer3d/Viewer3D';
 import { MathPanel } from './components/mathPanel/MathPanel';
 import { VectorCanvas } from './components/vectorCanvas/VectorCanvas';
+import { VectorBlueprintPanel } from './components/vectorBlueprint/VectorBlueprintPanel';
 
-type ActiveStep = 'foto' | 'split' | '3d';
+type ActiveStep = 'foto' | 'vectorial' | 'split' | '3d';
 type SheetStandard = 'pauta' | 'chile';
 
 export default function App() {
   const initial = useMemo(() => clonePreset('estanteria'), []);
   const [activePreset, setActivePreset] = useState<PresetKey | null>('estanteria');
+  const [activeCatalogId, setActiveCatalogId] = useState<string>('');
   const [topology, setTopology] = useState<FurnitureTopology>(initial.topology);
   const [params, setParams] = useState<ScaleAndBoardParams>(initial.params);
   const [explodeFactor, setExplodeFactor] = useState<number>(0);
   const [sheetStandard, setSheetStandard] = useState<SheetStandard>('pauta');
-  const [activeStep, setActiveStep] = useState<ActiveStep>('3d');
+  const [activeStep, setActiveStep] = useState<ActiveStep>('vectorial');
+  const [modelApproved, setModelApproved] = useState<boolean>(true);
 
   const despiece = useMemo(
     () => calculateDespiece(topology, params),
@@ -51,9 +59,28 @@ export default function App() {
       cloned.params.backPanelSheetDimensions = { ...CHILE_DUROLAC_SHEET };
     }
     setActivePreset(key);
+    setActiveCatalogId('');
     setTopology(cloned.topology);
     setParams(cloned.params);
     setExplodeFactor(0);
+    setModelApproved(true);
+  };
+
+  const handleLoadCatalog = (catalogId: string) => {
+    if (!catalogId) return;
+    const cloned = cloneCatalogFurniture(catalogId);
+    if (!cloned) return;
+    if (sheetStandard === 'chile') {
+      cloned.params.sheetDimensions = { ...CHILE_MELAMINE_SHEET };
+      cloned.params.backPanelSheetDimensions = { ...CHILE_DUROLAC_SHEET };
+    }
+    setActivePreset(null);
+    setActiveCatalogId(catalogId);
+    setTopology(cloned.topology);
+    setParams(cloned.params);
+    setExplodeFactor(0);
+    setModelApproved(false);
+    setActiveStep('vectorial');
   };
 
   const handleSheetStandardChange = (std: SheetStandard) => {
@@ -70,6 +97,7 @@ export default function App() {
       axis === 'z'
         ? Math.max(200, Math.min(800, value))
         : Math.max(300, Math.min(2400, value));
+    setModelApproved(false);
     setParams((prev) => ({
       ...prev,
       targetDimensions: { ...prev.targetDimensions, [axis]: clamped },
@@ -77,6 +105,7 @@ export default function App() {
   };
 
   const handleToggleCenterDivider = () => {
+    setModelApproved(false);
     setTopology((prev) => {
       const hasCenter = prev.vDividers.some((d) => Math.abs(d.position - 0.5) < 0.03);
       if (hasCenter) {
@@ -118,15 +147,20 @@ export default function App() {
     }));
   };
 
+  const handleUpdateFrontZones = (zones: FrontZone[]) => {
+    setModelApproved(false);
+    setTopology((prev) => ({ ...prev, frontZones: zones }));
+  };
+
   const hasCenterDivider = topology.vDividers.some((d) => Math.abs(d.position - 0.5) < 0.03);
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <div className="brand-title">SmartFurniture v3.0 — Diseño Paramétrico &amp; Corte 2D</div>
+          <div className="brand-title">SmartFurniture v3.2 — Foto → Plano Vectorial → 3D &amp; Corte 244×122</div>
           <div className="brand-sub">
-            100% Local Offline · INACAP Funciones y Matrices (Unidad 3) · Melamina {params.boardThickness} mm + Herrajes
+            100% Local Offline · INACAP Unidad 3 · Puertas, Cajones (5 pzas), Herrajes y Planchas 244×122 cm
           </div>
         </div>
         <div className="preset-bar">
@@ -140,6 +174,19 @@ export default function App() {
               {PRESETS[k].label}
             </button>
           ))}
+          <select
+            className="catalog-select"
+            value={activeCatalogId}
+            onChange={(e) => handleLoadCatalog(e.target.value)}
+            title="Cargar uno de los 14 muebles reales del catálogo QA"
+          >
+            <option value="">Catálogo QA (14 Muebles Reales)...</option>
+            {CATALOG_14_MUEBLES.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
         </div>
       </header>
 
@@ -150,26 +197,33 @@ export default function App() {
             className={activeStep === 'foto' ? 'step-btn active' : 'step-btn'}
             onClick={() => setActiveStep('foto')}
           >
-            1–2. Foto, Homografía y Visión
+            1. Foto &amp; Visión (Detectar)
           </button>
           <button
             type="button"
-            className={activeStep === 'split' ? 'step-btn active' : 'step-btn'}
-            onClick={() => setActiveStep('split')}
+            className={activeStep === 'vectorial' ? 'step-btn active' : 'step-btn'}
+            onClick={() => setActiveStep('vectorial')}
           >
-            Vista Dividida (Foto ↔ 3D en Vivo)
+            2. Plano Vectorial &amp; Redimensionar {!modelApproved ? '●' : '✓'}
           </button>
           <button
             type="button"
             className={activeStep === '3d' ? 'step-btn active' : 'step-btn'}
             onClick={() => setActiveStep('3d')}
           >
-            3–4. Visor 3D, Unidad 3 y Plano de Corte
+            3. Despiece, 3D &amp; Planchas 244×122
+          </button>
+          <button
+            type="button"
+            className={activeStep === 'split' ? 'step-btn active' : 'step-btn'}
+            onClick={() => setActiveStep('split')}
+          >
+            Vista Dividida (Foto ↔ 3D)
           </button>
         </div>
         <span className="small-note muted">
           Cuerpo: {params.targetDimensions.x}×{params.targetDimensions.y}×{params.targetDimensions.z} mm ·{' '}
-          {cuttingPlan.totalSheetsCount} plancha(s) ({cuttingPlan.usagePercentage.toFixed(1)}% uso)
+          {despiece.matrizDespiece.length} piezas · {cuttingPlan.totalSheetsCount} plancha(s) ({cuttingPlan.usagePercentage.toFixed(1)}% uso)
         </span>
       </nav>
 
@@ -267,12 +321,13 @@ export default function App() {
                   min={0}
                   max={8}
                   value={topology.equalShelfCount}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setModelApproved(false);
                     setTopology((prev) => ({
                       ...prev,
                       equalShelfCount: Number(e.target.value),
-                    }))
-                  }
+                    }));
+                  }}
                 />
               </div>
             )}
@@ -468,26 +523,56 @@ export default function App() {
         {/* ESCENARIO CENTRAL */}
         <main className="main-stage">
           {activeStep === 'foto' && (
-            <VectorCanvas
+            <>
+              <VectorCanvas
+                topology={topology}
+                params={params}
+                onUpdateTopology={(next) => {
+                  setActivePreset(null);
+                  setActiveCatalogId('');
+                  setModelApproved(false);
+                  setTopology(next);
+                }}
+                onApplyCalibratedDims={(dims) => {
+                  setModelApproved(false);
+                  setParams((p) => ({
+                    ...p,
+                    referenceDimensions: { ...dims },
+                    targetDimensions: { ...dims },
+                  }));
+                }}
+                onToggleBackPanel={(checked) =>
+                  setTopology((prev) => ({ ...prev, hasBackPanel: checked }))
+                }
+                onToggleExternalLegs={handleToggleExternalLegs}
+                onAddHardwareItem={handleAddHardwareItem}
+                onSelectDepthMm={(z) => updateTargetDim('z', z)}
+              />
+              <div className="export-bar">
+                <button
+                  type="button"
+                  className="btn-approve"
+                  onClick={() => setActiveStep('vectorial')}
+                >
+                  Siguiente → Ver Plano Vectorial 2D y Redimensionar
+                </button>
+              </div>
+            </>
+          )}
+
+          {activeStep === 'vectorial' && (
+            <VectorBlueprintPanel
               topology={topology}
               params={params}
-              onUpdateTopology={(next) => {
-                setActivePreset(null);
-                setTopology(next);
+              despiece={despiece}
+              cuttingPlan={cuttingPlan}
+              modelApproved={modelApproved}
+              onUpdateDim={updateTargetDim}
+              onUpdateFrontZones={handleUpdateFrontZones}
+              onApproveModel={() => {
+                setModelApproved(true);
+                setActiveStep('3d');
               }}
-              onApplyCalibratedDims={(dims) => {
-                setParams((p) => ({
-                  ...p,
-                  referenceDimensions: { ...dims },
-                  targetDimensions: { ...dims },
-                }));
-              }}
-              onToggleBackPanel={(checked) =>
-                setTopology((prev) => ({ ...prev, hasBackPanel: checked }))
-              }
-              onToggleExternalLegs={handleToggleExternalLegs}
-              onAddHardwareItem={handleAddHardwareItem}
-              onSelectDepthMm={(z) => updateTargetDim('z', z)}
             />
           )}
 
@@ -498,9 +583,12 @@ export default function App() {
                 params={params}
                 onUpdateTopology={(next) => {
                   setActivePreset(null);
+                  setActiveCatalogId('');
+                  setModelApproved(false);
                   setTopology(next);
                 }}
                 onApplyCalibratedDims={(dims) => {
+                  setModelApproved(false);
                   setParams((p) => ({
                     ...p,
                     referenceDimensions: { ...dims },
@@ -524,12 +612,27 @@ export default function App() {
           )}
 
           {activeStep === '3d' && (
-            <Viewer3D
-              despiece={despiece}
-              topology={topology}
-              params={params}
-              explodeFactor={explodeFactor}
-            />
+            <>
+              {!modelApproved && (
+                <div className="alert-box warning">
+                  <strong>Modelo modificado pendiente de aprobación vectorial:</strong>{' '}
+                  revisa el nuevo plano vectorial antes de enviar a corte o{' '}
+                  <button
+                    type="button"
+                    className="btn-small"
+                    onClick={() => setActiveStep('vectorial')}
+                  >
+                    Ir al Plano Vectorial 2D
+                  </button>
+                </div>
+              )}
+              <Viewer3D
+                despiece={despiece}
+                topology={topology}
+                params={params}
+                explodeFactor={explodeFactor}
+              />
+            </>
           )}
 
           <MathPanel

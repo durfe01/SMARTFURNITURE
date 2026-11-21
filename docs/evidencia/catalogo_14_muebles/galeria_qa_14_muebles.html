@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>SmartFurniture v3.2 — Galería QA de 14 Muebles Reales</title>
+<style>
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #0f172a; margin: 0; padding: 20px; }
+  h1 { color: #0f2b4c; margin-bottom: 6px; }
+  .sub { color: #475569; margin-bottom: 20px; font-size: 13px; }
+  .card { background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+  .card h2 { margin: 0 0 8px 0; font-size: 16px; color: #0f2b4c; }
+  .badge { background: #0284c7; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; }
+  .meta { font-size: 12.5px; color: #334155; margin-bottom: 12px; background: #f8fafc; padding: 8px 10px; border-radius: 6px; }
+  .grid3 { display: grid; grid-template-columns: 260px 1fr 1fr; gap: 12px; align-items: start; }
+  @media (max-width: 1100px) { .grid3 { grid-template-columns: 1fr; } }
+  .lbl { font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; }
+  img { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; font-weight: 700; color: #0369a1; font-size: 12.5px; }
+  img.cut { margin-top: 8px; max-width: 960px; }
+</style>
+</head>
+<body>
+  <h1>SmartFurniture v3.2 — Auditoría Visual QA de los 14 Muebles Reales</h1>
+  <div class="sub">100 % Offline · Foto Original vs. Plano Vectorial Original V₀ vs. Nuevo Plano Redimensionado V_f + Optimización 244×122 cm · 14/14 PASS</div>
+  
+      <section class="card">
+        <h2>01 — Buffet Madera 3 Puertas + 3 Cajones <span class="badge">CERRADO</span></h2>
+        <div class="meta">
+          Original V₀: <b>1800×760×450 mm</b> · Redimensionado V_f: <b>2070×699×473 mm</b> ·
+          Despiece: <b>22 melamina (18 mm) + 4 fondo (3 mm)</b> (3 puertas, 3 cajones × 5 piezas) ·
+          Planchas 244×122: <b>3 melamina + 1 fondo</b> (64.4% uso) ·
+          Herrajes: <b>patas:5, bisagras:6, correderas:3, tiradores:6</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/01_buffet_madera.webp" alt="01 — Buffet Madera 3 Puertas + 3 Cajones" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/01_m01_buffet_madera_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/01_m01_buffet_madera_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (01_m01_buffet_madera_corte_244x122.svg)</summary><img class="cut" src="planos_svg/01_m01_buffet_madera_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>02 — Despensero Microondas 2 Cuerpos <span class="badge">DOS_NIVELES</span></h2>
+        <div class="meta">
+          Original V₀: <b>650×1820×420 mm</b> · Redimensionado V_f: <b>747×1674×441 mm</b> ·
+          Despiece: <b>16 melamina (18 mm) + 2 fondo (3 mm)</b> (4 puertas, 1 cajones × 5 piezas) ·
+          Planchas 244×122: <b>3 melamina + 1 fondo</b> (49.3% uso) ·
+          Herrajes: <b>patas:4, bisagras:8, correderas:1, tiradores:5</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/02_despensero_microondas.webp" alt="02 — Despensero Microondas 2 Cuerpos" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/02_m02_despensero_microondas_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/02_m02_despensero_microondas_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (02_m02_despensero_microondas_corte_244x122.svg)</summary><img class="cut" src="planos_svg/02_m02_despensero_microondas_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>03 — Buffet Nórdico Blanco + Roble <span class="badge">CERRADO</span></h2>
+        <div class="meta">
+          Original V₀: <b>1600×640×400 mm</b> · Redimensionado V_f: <b>1840×589×420 mm</b> ·
+          Despiece: <b>20 melamina (18 mm) + 4 fondo (3 mm)</b> (2 puertas, 3 cajones × 5 piezas) ·
+          Planchas 244×122: <b>3 melamina + 1 fondo</b> (48.2% uso) ·
+          Herrajes: <b>patas:5, bisagras:4, correderas:3, tiradores:5</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/03_buffet_nordico_blanco_roble.webp" alt="03 — Buffet Nórdico Blanco + Roble" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/03_m03_buffet_nordico_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/03_m03_buffet_nordico_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (03_m03_buffet_nordico_corte_244x122.svg)</summary><img class="cut" src="planos_svg/03_m03_buffet_nordico_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>04 — Armario Oficina Mixto (Grafito + Nogal) <span class="badge">MIXTO</span></h2>
+        <div class="meta">
+          Original V₀: <b>800×1200×400 mm</b> · Redimensionado V_f: <b>920×1104×420 mm</b> ·
+          Despiece: <b>11 melamina (18 mm) + 1 fondo (3 mm)</b> (2 puertas, 0 cajones × 5 piezas) ·
+          Planchas 244×122: <b>2 melamina + 1 fondo</b> (44.8% uso) ·
+          Herrajes: <b>patas:4, otro:1, bisagras:4, tiradores:2</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/04_armario_oficina_mixto.webp" alt="04 — Armario Oficina Mixto (Grafito + Nogal)" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/04_m04_armario_oficina_mixto_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/04_m04_armario_oficina_mixto_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (04_m04_armario_oficina_mixto_corte_244x122.svg)</summary><img class="cut" src="planos_svg/04_m04_armario_oficina_mixto_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>05 — Escritorio Ejecutivo 2 Pedestales <span class="badge">ESCRITORIO</span></h2>
+        <div class="meta">
+          Original V₀: <b>1500×750×600 mm</b> · Redimensionado V_f: <b>1725×690×630 mm</b> ·
+          Despiece: <b>25 melamina (18 mm) + 3 fondo (3 mm)</b> (2 puertas, 3 cajones × 5 piezas) ·
+          Planchas 244×122: <b>4 melamina + 1 fondo</b> (43.1% uso) ·
+          Herrajes: <b>otro:3, bisagras:4, correderas:3, tiradores:5</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/05_escritorio_ejecutivo.webp" alt="05 — Escritorio Ejecutivo 2 Pedestales" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/05_m05_escritorio_ejecutivo_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/05_m05_escritorio_ejecutivo_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (05_m05_escritorio_ejecutivo_corte_244x122.svg)</summary><img class="cut" src="planos_svg/05_m05_escritorio_ejecutivo_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>06 — Vitrina Alta 4 Puertas (2 Vidriadas + 2 Ciegas) <span class="badge">DOS_NIVELES</span></h2>
+        <div class="meta">
+          Original V₀: <b>800×1900×400 mm</b> · Redimensionado V_f: <b>920×1748×420 mm</b> ·
+          Despiece: <b>16 melamina (18 mm) + 1 fondo (3 mm)</b> (4 puertas, 0 cajones × 5 piezas) ·
+          Planchas 244×122: <b>3 melamina + 1 fondo</b> (61.1% uso) ·
+          Herrajes: <b>otro:1, bisagras:10, otro:2, tiradores:4</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/06_vitrina_4_puertas.webp" alt="06 — Vitrina Alta 4 Puertas (2 Vidriadas + 2 Ciegas)" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/06_m06_vitrina_4_puertas_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/06_m06_vitrina_4_puertas_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (06_m06_vitrina_4_puertas_corte_244x122.svg)</summary><img class="cut" src="planos_svg/06_m06_vitrina_4_puertas_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>07 — Rack TV Blanco Mixto (2 Cajones + Nicho + 2 Puertas) <span class="badge">MIXTO</span></h2>
+        <div class="meta">
+          Original V₀: <b>1800×480×400 mm</b> · Redimensionado V_f: <b>2070×442×420 mm</b> ·
+          Despiece: <b>18 melamina (18 mm) + 3 fondo (3 mm)</b> (2 puertas, 2 cajones × 5 piezas) ·
+          Planchas 244×122: <b>2 melamina + 1 fondo</b> (58.8% uso) ·
+          Herrajes: <b>bisagras:4, correderas:2, tiradores:4</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/07_rack_tv_blanco_mixto.webp" alt="07 — Rack TV Blanco Mixto (2 Cajones + Nicho + 2 Puertas)" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/07_m07_rack_tv_blanco_mixto_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/07_m07_rack_tv_blanco_mixto_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (07_m07_rack_tv_blanco_mixto_corte_244x122.svg)</summary><img class="cut" src="planos_svg/07_m07_rack_tv_blanco_mixto_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>08 — Mesa de Centro Roble + Estructura Metálica <span class="badge">MESA_METAL</span></h2>
+        <div class="meta">
+          Original V₀: <b>1100×420×600 mm</b> · Redimensionado V_f: <b>1265×400×630 mm</b> ·
+          Despiece: <b>4 melamina (18 mm) + 0 fondo (3 mm)</b> (0 puertas, 0 cajones × 5 piezas) ·
+          Planchas 244×122: <b>2 melamina + 0 fondo</b> (34.5% uso) ·
+          Herrajes: <b>patas:4, otro:2</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/08_mesa_centro_fierro.webp" alt="08 — Mesa de Centro Roble + Estructura Metálica" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/08_m08_mesa_centro_fierro_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/08_m08_mesa_centro_fierro_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (08_m08_mesa_centro_fierro_corte_244x122.svg)</summary><img class="cut" src="planos_svg/08_m08_mesa_centro_fierro_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>09 — Alacena Cocina Blanca con Mesón Granito <span class="badge">DOS_NIVELES</span></h2>
+        <div class="meta">
+          Original V₀: <b>1600×1950×450 mm</b> · Redimensionado V_f: <b>1840×1794×473 mm</b> ·
+          Despiece: <b>32 melamina (18 mm) + 3 fondo (3 mm)</b> (8 puertas, 1 cajones × 5 piezas) ·
+          Planchas 244×122: <b>5 melamina + 3 fondo</b> (57.0% uso) ·
+          Herrajes: <b>otro:1, bisagras:16, correderas:1, otro:4, tiradores:9</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/09_alacena_cocina_meson.webp" alt="09 — Alacena Cocina Blanca con Mesón Granito" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/09_m09_alacena_cocina_meson_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/09_m09_alacena_cocina_meson_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (09_m09_alacena_cocina_meson_corte_244x122.svg)</summary><img class="cut" src="planos_svg/09_m09_alacena_cocina_meson_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>10 — Librero Modular 3 Cuerpos Abierto (Roble) <span class="badge">ABIERTO</span></h2>
+        <div class="meta">
+          Original V₀: <b>1700×2000×320 mm</b> · Redimensionado V_f: <b>1955×1840×336 mm</b> ·
+          Despiece: <b>18 melamina (18 mm) + 3 fondo (3 mm)</b> (0 puertas, 0 cajones × 5 piezas) ·
+          Planchas 244×122: <b>3 melamina + 2 fondo</b> (65.2% uso) ·
+          Herrajes: <b>-</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/10_librero_3_cuerpos_roble.webp" alt="10 — Librero Modular 3 Cuerpos Abierto (Roble)" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/10_m10_librero_3_cuerpos_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/10_m10_librero_3_cuerpos_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (10_m10_librero_3_cuerpos_corte_244x122.svg)</summary><img class="cut" src="planos_svg/10_m10_librero_3_cuerpos_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>11 — Escritorio Simple con Cajonera Derecha (2 Cajones) <span class="badge">ESCRITORIO</span></h2>
+        <div class="meta">
+          Original V₀: <b>1200×750×600 mm</b> · Redimensionado V_f: <b>1380×690×630 mm</b> ·
+          Despiece: <b>15 melamina (18 mm) + 2 fondo (3 mm)</b> (0 puertas, 2 cajones × 5 piezas) ·
+          Planchas 244×122: <b>2 melamina + 1 fondo</b> (37.5% uso) ·
+          Herrajes: <b>otro:1, correderas:2, tiradores:2</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/11_escritorio_cajonera_der.webp" alt="11 — Escritorio Simple con Cajonera Derecha (2 Cajones)" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/11_m11_escritorio_cajonera_der_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/11_m11_escritorio_cajonera_der_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (11_m11_escritorio_cajonera_der_corte_244x122.svg)</summary><img class="cut" src="planos_svg/11_m11_escritorio_cajonera_der_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>12 — Carro Auxiliar Cocina (Cajón + 3 Canastos + 2 Puertas + Ruedas) <span class="badge">MIXTO</span></h2>
+        <div class="meta">
+          Original V₀: <b>950×820×420 mm</b> · Redimensionado V_f: <b>1093×754×441 mm</b> ·
+          Despiece: <b>15 melamina (18 mm) + 2 fondo (3 mm)</b> (2 puertas, 1 cajones × 5 piezas) ·
+          Planchas 244×122: <b>2 melamina + 1 fondo</b> (49.3% uso) ·
+          Herrajes: <b>patas:4, otro:3, bisagras:4, correderas:1, tiradores:3</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/12_carro_cocina_escalonado.jpg" alt="12 — Carro Auxiliar Cocina (Cajón + 3 Canastos + 2 Puertas + Ruedas)" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/12_m12_carro_cocina_escalonado_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/12_m12_carro_cocina_escalonado_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (12_m12_carro_cocina_escalonado_corte_244x122.svg)</summary><img class="cut" src="planos_svg/12_m12_carro_cocina_escalonado_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>13 — Mueble Cocina Integral Blanco 2 Niveles <span class="badge">DOS_NIVELES</span></h2>
+        <div class="meta">
+          Original V₀: <b>1500×1920×450 mm</b> · Redimensionado V_f: <b>1725×1766×473 mm</b> ·
+          Despiece: <b>27 melamina (18 mm) + 3 fondo (3 mm)</b> (6 puertas, 1 cajones × 5 piezas) ·
+          Planchas 244×122: <b>5 melamina + 3 fondo</b> (53.9% uso) ·
+          Herrajes: <b>bisagras:12, correderas:1, tiradores:7</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/13_cocina_integral_blanca.webp" alt="13 — Mueble Cocina Integral Blanco 2 Niveles" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/13_m13_cocina_integral_blanca_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/13_m13_cocina_integral_blanca_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (13_m13_cocina_integral_blanca_corte_244x122.svg)</summary><img class="cut" src="planos_svg/13_m13_cocina_integral_blanca_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+
+      <section class="card">
+        <h2>14 — Mueble Cocina Bicolor Blanco + Roble <span class="badge">DOS_NIVELES</span></h2>
+        <div class="meta">
+          Original V₀: <b>1600×1950×450 mm</b> · Redimensionado V_f: <b>1840×1794×473 mm</b> ·
+          Despiece: <b>32 melamina (18 mm) + 3 fondo (3 mm)</b> (7 puertas, 1 cajones × 5 piezas) ·
+          Planchas 244×122: <b>5 melamina + 3 fondo</b> (57.6% uso) ·
+          Herrajes: <b>bisagras:17, correderas:1, tiradores:8</b>
+        </div>
+        <div class="grid3">
+          <div><div class="lbl">Foto Original</div><img src="fotos/14_cocina_bicolor_roble.jpg" alt="14 — Mueble Cocina Bicolor Blanco + Roble" /></div>
+          <div><div class="lbl">Plano Vectorial Original (V₀)</div><img src="planos_svg/14_m14_cocina_bicolor_roble_original.svg" alt="Original" /></div>
+          <div><div class="lbl">Nuevo Plano Redimensionado (V_f)</div><img src="planos_svg/14_m14_cocina_bicolor_roble_redimensionado.svg" alt="Redimensionado" /></div>
+        </div>
+        <details><summary>Ver Optimización de Cortes en Planchas 244×122 cm (14_m14_cocina_bicolor_roble_corte_244x122.svg)</summary><img class="cut" src="planos_svg/14_m14_cocina_bicolor_roble_corte_244x122.svg" alt="Corte" /></details>
+      </section>
+</body>
+</html>

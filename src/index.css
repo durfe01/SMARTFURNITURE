@@ -656,3 +656,90 @@ body {
   align-items: center;
   font-size: 12px;
 }
+
+.catalog-select {
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #38bdf8;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  max-width: 260px;
+}
+
+.btn-approve {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #059669;
+  color: #ffffff;
+  border: 1px solid #047857;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-approve:hover {
+  background: #047857;
+}
+
+.blueprint-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 1150px) {
+  .blueprint-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.blueprint-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.blueprint-pane-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f2b4c;
+  background: #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.blueprint-pane-title.resized {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.zone-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.zone-chip {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 7px 9px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.zone-chip select,
+.zone-chip input {
+  padding: 4px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 11.5px;
+}

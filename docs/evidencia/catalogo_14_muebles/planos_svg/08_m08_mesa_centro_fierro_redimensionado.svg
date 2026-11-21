@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 540" width="100%">
+  <defs>
+    <pattern id="bpGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.6" />
+    </pattern>
+  </defs>
+  <rect width="920" height="540" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+  <rect x="0" y="0" width="920" height="44" fill="#0f2b4c" />
+  <text x="18" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#ffffff">08 — Mesa de Centro Roble + Estructura Metálica (REDIMENSIONADO)</text>
+  <text x="18" y="36" font-family="Consolas, monospace" font-size="10.5" fill="#7dd3fc">NUEVO MODELO VECTORIAL REDIMENSIONADO Vf · Cuerpo Melamina 1265×400×630 mm (e=18 mm)</text>
+  <text x="902" y="27" text-anchor="end" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#38bdf8">ESCALA 1:3</text>
+  <rect x="18" y="54" width="884" height="384" fill="url(#bpGrid)" stroke="#e2e8f0" />
+  <text x="347.0" y="142.6" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">ALZADO FRONTAL (PLANO XY)</text>
+  <rect x="156.25" y="168.63" width="381.51" height="120.63" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="179.14" y="289.27" width="12.00" height="18.10" fill="#e2e8f0" stroke="#475569" stroke-width="1.2" stroke-dasharray="3,2" />
+  <rect x="502.86" y="289.27" width="12.00" height="18.10" fill="#e2e8f0" stroke="#475569" stroke-width="1.2" stroke-dasharray="3,2" />
+  <text x="347.0" y="301.0" text-anchor="middle" font-family="Consolas, monospace" font-size="9" fill="#92400e">PATAS EXTERNAS (60 mm · NO MELAMINA)</text>
+  <rect x="161.67" y="174.06" width="370.65" height="109.78" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="347.0" y="232.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Vano Abierto Mesa</text>
+  <rect x="156.25" y="168.63" width="381.51" height="5.43" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="156.25" y="283.84" width="381.51" height="5.43" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="156.25" y="168.63" width="5.43" height="120.63" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="532.33" y="168.63" width="5.43" height="120.63" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <line x1="156.2" y1="156.6" x2="537.8" y2="156.6" stroke="#0284c7" stroke-width="1.3" />
+  <text x="347.0" y="153.6" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#0284c7">Ancho X = 1265 mm</text>
+  <line x1="138.2" y1="168.6" x2="138.2" y2="289.3" stroke="#059669" stroke-width="1.3" />
+  <text x="133.2" y="229.0" text-anchor="middle" transform="rotate(-90 133.2 229.0)" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#059669">Alto Y = 400 mm</text>
+  <text x="761.0" y="142.6" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">PERFIL LATERAL (ZY)</text>
+  <rect x="666.00" y="168.63" width="190.00" height="120.63" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="688.80" y="289.27" width="10.00" height="18.10" fill="#e2e8f0" stroke="#475569" stroke-dasharray="3,2" />
+  <rect x="823.20" y="289.27" width="10.00" height="18.10" fill="#e2e8f0" stroke="#475569" stroke-dasharray="3,2" />
+  <line x1="666.0" y1="156.6" x2="856.0" y2="156.6" stroke="#7c3aed" stroke-width="1.3" />
+  <text x="761.0" y="153.6" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#7c3aed">Z = 630 mm</text>
+  <rect x="18" y="446" width="884" height="80" fill="#f8fafc" stroke="#0f2b4c" stroke-width="1.2" rx="4" />
+  <text x="30" y="466" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#0f2b4c">RESUMEN DE DESPIECE: 4 piezas melamina (18 mm) · 0 piezas fondo 3 mm · 0 puerta(s) · 0 cajón(es) [5 pzas/cajón]</text>
+  <text x="30" y="486" font-family="Consolas, monospace" font-size="10.5" fill="#0369a1">Planchas 244×122 cm: 2 melamina + 0 fondo 3mm · Uso 34.5% · Escala k=(1.15, 0.95, 1.05)</text>
+  <text x="30" y="506" font-family="Consolas, monospace" font-size="10" fill="#92400e">HERRAJES (NO MELAMINA): patas: 4 · otro: 2</text>
+  <text x="890" y="518" text-anchor="end" font-family="Consolas, monospace" font-size="9" fill="#64748b">Alertas estructurales: 0 · 100% Offline SmartFurniture v3.2</text>
+</svg>

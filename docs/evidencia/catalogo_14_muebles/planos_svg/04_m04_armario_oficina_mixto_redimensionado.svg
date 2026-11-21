@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 540" width="100%">
+  <defs>
+    <pattern id="bpGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.6" />
+    </pattern>
+  </defs>
+  <rect width="920" height="540" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+  <rect x="0" y="0" width="920" height="44" fill="#0f2b4c" />
+  <text x="18" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#ffffff">04 — Armario Oficina Mixto (Grafito + Nogal) (REDIMENSIONADO)</text>
+  <text x="18" y="36" font-family="Consolas, monospace" font-size="10.5" fill="#7dd3fc">NUEVO MODELO VECTORIAL REDIMENSIONADO Vf · Cuerpo Melamina 920×1104×420 mm (e=18 mm)</text>
+  <text x="902" y="27" text-anchor="end" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#38bdf8">ESCALA 1:4</text>
+  <rect x="18" y="54" width="884" height="384" fill="url(#bpGrid)" stroke="#e2e8f0" />
+  <text x="347.0" y="52.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">ALZADO FRONTAL (PLANO XY)</text>
+  <rect x="218.89" y="78.00" width="256.22" height="307.47" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="234.26" y="385.47" width="8.20" height="12.53" fill="#e2e8f0" stroke="#475569" stroke-width="1.2" stroke-dasharray="3,2" />
+  <rect x="451.54" y="385.47" width="8.20" height="12.53" fill="#e2e8f0" stroke="#475569" stroke-width="1.2" stroke-dasharray="3,2" />
+  <text x="347.0" y="393.6" text-anchor="middle" font-family="Consolas, monospace" font-size="9" fill="#92400e">PATAS EXTERNAS (45 mm · NO MELAMINA)</text>
+  <rect x="225.90" y="189.12" width="120.10" height="189.34" fill="#fef9c3" stroke="#0284c7" stroke-width="1.2" />
+  <polyline points="225.9,189.1 346.0,283.8 225.9,378.5" fill="none" stroke="#0369a1" stroke-width="0.7" stroke-dasharray="3,3" />
+  <line x1="341.0" y1="276.8" x2="341.0" y2="290.8" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+  <rect x="348.00" y="189.12" width="120.10" height="189.34" fill="#fef9c3" stroke="#0284c7" stroke-width="1.2" />
+  <polyline points="468.1,189.1 348.0,283.8 468.1,378.5" fill="none" stroke="#0369a1" stroke-width="0.7" stroke-dasharray="3,3" />
+  <line x1="353.0" y1="276.8" x2="353.0" y2="290.8" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+  <rect x="223.90" y="83.01" width="81.98" height="104.10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="264.9" y="138.1" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Cubículo 1</text>
+  <rect x="305.89" y="83.01" width="82.23" height="104.10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="347.0" y="138.1" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Cubículo 2</text>
+  <rect x="388.11" y="83.01" width="81.98" height="104.10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="429.1" y="138.1" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Cubículo 3</text>
+  <rect x="218.89" y="78.00" width="256.22" height="5.01" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="218.89" y="380.45" width="256.22" height="5.01" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="218.89" y="78.00" width="5.01" height="307.47" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="470.10" y="78.00" width="5.01" height="307.47" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="303.38" y="83.01" width="5.01" height="104.10" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="385.61" y="83.01" width="5.01" height="104.10" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="223.90" y="184.61" width="246.20" height="5.01" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <line x1="218.9" y1="66.0" x2="475.1" y2="66.0" stroke="#0284c7" stroke-width="1.3" />
+  <text x="347.0" y="63.0" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#0284c7">Ancho X = 920 mm</text>
+  <line x1="200.9" y1="78.0" x2="200.9" y2="385.5" stroke="#059669" stroke-width="1.3" />
+  <text x="195.9" y="231.7" text-anchor="middle" transform="rotate(-90 195.9 231.7)" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#059669">Alto Y = 1104 mm</text>
+  <text x="724.5" y="52.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">PERFIL LATERAL (ZY)</text>
+  <rect x="666.00" y="78.00" width="116.97" height="307.47" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="663.00" y="78.00" width="3" height="307.47" fill="#b45309" />
+  <rect x="680.04" y="385.47" width="10.00" height="12.53" fill="#e2e8f0" stroke="#475569" stroke-dasharray="3,2" />
+  <rect x="758.93" y="385.47" width="10.00" height="12.53" fill="#e2e8f0" stroke="#475569" stroke-dasharray="3,2" />
+  <rect x="783.97" y="80.00" width="5.01" height="303.47" fill="#fef9c3" stroke="#0284c7" stroke-width="1" />
+  <line x1="666.0" y1="66.0" x2="783.0" y2="66.0" stroke="#7c3aed" stroke-width="1.3" />
+  <text x="724.5" y="63.0" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#7c3aed">Z = 420 mm</text>
+  <rect x="18" y="446" width="884" height="80" fill="#f8fafc" stroke="#0f2b4c" stroke-width="1.2" rx="4" />
+  <text x="30" y="466" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#0f2b4c">RESUMEN DE DESPIECE: 11 piezas melamina (18 mm) · 1 piezas fondo 3 mm · 2 puerta(s) · 0 cajón(es) [5 pzas/cajón]</text>
+  <text x="30" y="486" font-family="Consolas, monospace" font-size="10.5" fill="#0369a1">Planchas 244×122 cm: 2 melamina + 1 fondo 3mm · Uso 44.8% · Escala k=(1.15, 0.92, 1.05)</text>
+  <text x="30" y="506" font-family="Consolas, monospace" font-size="10" fill="#92400e">HERRAJES (NO MELAMINA): patas: 4 · otro: 1 · bisagras: 4 · tiradores: 2</text>
+  <text x="890" y="518" text-anchor="end" font-family="Consolas, monospace" font-size="9" fill="#64748b">Alertas estructurales: 0 · 100% Offline SmartFurniture v3.2</text>
+</svg>

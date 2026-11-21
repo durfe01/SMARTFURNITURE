@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 916 4094" width="100%">
+  <defs>
+    <pattern id="wasteGrid" width="14" height="14" patternUnits="userSpaceOnUse">
+      <rect width="14" height="14" fill="#f1f5f9" />
+      <path d="M 14 0 L 0 0 0 14" fill="none" stroke="#e2e8f0" stroke-width="0.8" />
+    </pattern>
+  </defs>
+  <rect width="916" height="4094" fill="#ffffff" />
+<g data-sheet-id="1">
+  <text x="28" y="40" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#0f172a">Plancha #1 · Melamina BLANCO 18 mm (2440×1220 mm) · Uso 81.8% / Desp. 18.2% · Kerf 4 mm</text>
+  <text x="888" y="40" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#0369a1">→ Sentido de veta (2440 mm)</text>
+  <rect x="28" y="64" width="860.00" height="430.00" fill="url(#wasteGrid)" stroke="#334155" stroke-width="2" />
+  <rect x="28.00" y="64.00" width="215.78" height="183.14" fill="#fce7f3" stroke="#be185d" stroke-width="1.2" />
+  <text x="135.89" y="152.57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Puerta 4</text>
+  <text x="135.89" y="165.57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">612×520 mm</text>
+  <rect x="245.19" y="64.00" width="619.62" height="166.71" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2" />
+  <text x="555.00" y="144.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Lateral Izquierdo</text>
+  <text x="555.00" y="157.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">1758×473 mm</text>
+  <rect x="28.00" y="248.55" width="648.52" height="166.71" fill="#dcfce7" stroke="#15803d" stroke-width="1.2" />
+  <text x="352.26" y="328.91" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Base</text>
+  <text x="352.26" y="341.91" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">1840×473 mm</text>
+  <rect x="677.93" y="248.55" width="174.86" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="765.37" y="328.91" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Repisa 1 (Vano 5)</text>
+  <text x="765.37" y="341.91" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">496×473 mm</text>
+  <rect x="28.00" y="416.68" width="635.84" height="35.25" fill="#dcfce7" stroke="#15803d" stroke-width="1.2" />
+  <text x="345.92" y="431.30" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Zócalo Frontal</text>
+  <text x="345.92" y="444.30" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">1804×100 mm</text>
+</g>
+<g data-sheet-id="2">
+  <text x="28" y="548" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#0f172a">Plancha #2 · Melamina BLANCO 18 mm (2440×1220 mm) · Uso 86.0% / Desp. 14.0% · Kerf 4 mm</text>
+  <text x="888" y="548" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#0369a1">→ Sentido de veta (2440 mm)</text>
+  <rect x="28" y="572" width="860.00" height="430.00" fill="url(#wasteGrid)" stroke="#334155" stroke-width="2" />
+  <rect x="28.00" y="572.00" width="648.52" height="166.71" fill="#dcfce7" stroke="#15803d" stroke-width="1.2" />
+  <text x="352.26" y="652.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Cubierta</text>
+  <text x="352.26" y="665.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">1840×473 mm</text>
+  <rect x="677.93" y="572.00" width="174.86" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="765.37" y="652.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Repisa 3</text>
+  <text x="765.37" y="665.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">496×473 mm</text>
+  <rect x="28.00" y="740.12" width="619.62" height="166.71" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.2" />
+  <text x="337.81" y="820.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Lateral Derecho</text>
+  <text x="337.81" y="833.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">1758×473 mm</text>
+  <rect x="649.03" y="740.12" width="174.86" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="736.46" y="820.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Repisa 4</text>
+  <text x="736.46" y="833.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">496×473 mm</text>
+  <rect x="28.00" y="908.25" width="183.14" height="84.63" fill="#ffedd5" stroke="#c2410c" stroke-width="1.2" />
+  <text x="119.57" y="947.56" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Frente Cajón 1/1</text>
+  <text x="119.57" y="960.56" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">520×240 mm</text>
+  <rect x="212.55" y="908.25" width="153.01" height="72.65" fill="#ffedd5" stroke="#c2410c" stroke-width="1.2" />
+  <text x="289.06" y="941.57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.9" font-weight="600" fill="#0f172a">Trasera Cajón 1/1</text>
+  <text x="289.06" y="954.57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.6" fill="#334155">434×206 mm</text>
+  <rect x="366.97" y="908.25" width="149.09" height="72.65" fill="#ffedd5" stroke="#c2410c" stroke-width="1.2" />
+  <text x="441.52" y="941.57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.6" font-weight="600" fill="#0f172a">Costado Izq Cajón 1/1</text>
+  <text x="441.52" y="954.57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.3" fill="#334155">423×206 mm</text>
+  <rect x="517.47" y="908.25" width="149.09" height="72.65" fill="#ffedd5" stroke="#c2410c" stroke-width="1.2" />
+  <text x="592.02" y="941.57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.6" font-weight="600" fill="#0f172a">Costado Der Cajón 1/1</text>
+  <text x="592.02" y="954.57" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.3" fill="#334155">423×206 mm</text>
+</g>
+<g data-sheet-id="3">
+  <text x="28" y="1056" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#0f172a">Plancha #3 · Melamina BLANCO 18 mm (2440×1220 mm) · Uso 69.9% / Desp. 30.1% · Kerf 4 mm</text>
+  <text x="888" y="1056" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#0369a1">→ Sentido de veta (2440 mm)</text>
+  <rect x="28" y="1080" width="860.00" height="430.00" fill="url(#wasteGrid)" stroke="#334155" stroke-width="2" />
+  <rect x="28.00" y="1080.00" width="322.20" height="166.71" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.2" />
+  <text x="189.10" y="1160.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Divisor Vertical 5</text>
+  <text x="189.10" y="1173.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">914×473 mm</text>
+  <rect x="351.61" y="1080.00" width="297.42" height="166.71" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.2" />
+  <text x="500.32" y="1160.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Divisor Vertical 2</text>
+  <text x="500.32" y="1173.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">844×473 mm</text>
+  <rect x="650.44" y="1080.00" width="174.86" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="737.87" y="1160.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Repisa 5</text>
+  <text x="737.87" y="1173.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">496×473 mm</text>
+  <rect x="28.00" y="1248.12" width="297.42" height="166.71" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.2" />
+  <text x="176.71" y="1328.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Divisor Vertical 4</text>
+  <text x="176.71" y="1341.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">844×473 mm</text>
+  <rect x="326.83" y="1248.12" width="297.42" height="166.71" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.2" />
+  <text x="475.54" y="1328.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Divisor Vertical 6</text>
+  <text x="475.54" y="1341.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">844×473 mm</text>
+  <rect x="625.66" y="1248.12" width="161.10" height="166.71" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.2" />
+  <text x="706.21" y="1328.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Divisor Vertical 1</text>
+  <text x="706.21" y="1341.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">457×473 mm</text>
+</g>
+<g data-sheet-id="4">
+  <text x="28" y="1564" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#0f172a">Plancha #4 · Melamina BLANCO 18 mm (2440×1220 mm) · Uso 67.1% / Desp. 32.9% · Kerf 4 mm</text>
+  <text x="888" y="1564" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#0369a1">→ Sentido de veta (2440 mm)</text>
+  <rect x="28" y="1588" width="860.00" height="430.00" fill="url(#wasteGrid)" stroke="#334155" stroke-width="2" />
+  <rect x="28.00" y="1588.00" width="161.10" height="166.71" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.2" />
+  <text x="108.55" y="1668.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Divisor Vertical 3</text>
+  <text x="108.55" y="1681.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">457×473 mm</text>
+  <rect x="190.51" y="1588.00" width="149.43" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="265.23" y="1668.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.7" font-weight="600" fill="#0f172a">Repisa 1 (Vano 1)</text>
+  <text x="265.23" y="1681.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.3" fill="#334155">424×473 mm</text>
+  <rect x="341.35" y="1588.00" width="149.43" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="416.06" y="1668.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.7" font-weight="600" fill="#0f172a">Repisa 2 (Vano 1)</text>
+  <text x="416.06" y="1681.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.3" fill="#334155">424×473 mm</text>
+  <rect x="492.19" y="1588.00" width="146.26" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="565.32" y="1668.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.4" font-weight="600" fill="#0f172a">Repisa 1 (Vano 2)</text>
+  <text x="565.32" y="1681.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.1" fill="#334155">415×473 mm</text>
+  <rect x="639.85" y="1588.00" width="146.26" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="712.98" y="1668.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.4" font-weight="600" fill="#0f172a">Repisa 2 (Vano 2)</text>
+  <text x="712.98" y="1681.36" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.1" fill="#334155">415×473 mm</text>
+  <rect x="28.00" y="1756.12" width="146.26" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="101.13" y="1836.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.4" font-weight="600" fill="#0f172a">Repisa 1 (Vano 3)</text>
+  <text x="101.13" y="1849.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.1" fill="#334155">415×473 mm</text>
+  <rect x="175.67" y="1756.12" width="146.26" height="166.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="248.79" y="1836.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.4" font-weight="600" fill="#0f172a">Repisa 2 (Vano 3)</text>
+  <text x="248.79" y="1849.48" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="9.1" fill="#334155">415×473 mm</text>
+  <rect x="323.33" y="1756.12" width="302.53" height="157.71" fill="#fce7f3" stroke="#be185d" stroke-width="1.2" />
+  <text x="474.60" y="1831.98" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Puerta 1</text>
+  <text x="474.60" y="1844.98" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">858×447 mm</text>
+  <rect x="627.27" y="1756.12" width="166.21" height="157.71" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="710.38" y="1831.98" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Alacena 1</text>
+  <text x="710.38" y="1844.98" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">472×447 mm</text>
+</g>
+<g data-sheet-id="5">
+  <text x="28" y="2072" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#0f172a">Plancha #5 · Melamina BLANCO 18 mm (2440×1220 mm) · Uso 38.4% / Desp. 61.6% · Kerf 4 mm</text>
+  <text x="888" y="2072" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#0369a1">→ Sentido de veta (2440 mm)</text>
+  <rect x="28" y="2096" width="860.00" height="430.00" fill="url(#wasteGrid)" stroke="#334155" stroke-width="2" />
+  <rect x="28.00" y="2096.00" width="302.53" height="151.54" fill="#fce7f3" stroke="#be185d" stroke-width="1.2" />
+  <text x="179.26" y="2168.77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Puerta 2</text>
+  <text x="179.26" y="2181.77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">858×430 mm</text>
+  <rect x="331.94" y="2096.00" width="166.21" height="151.54" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="415.05" y="2168.77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Alacena 2</text>
+  <text x="415.05" y="2181.77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">472×430 mm</text>
+  <rect x="499.56" y="2096.00" width="302.53" height="151.54" fill="#fce7f3" stroke="#be185d" stroke-width="1.2" />
+  <text x="650.83" y="2168.77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Puerta 3</text>
+  <text x="650.83" y="2181.77" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">858×430 mm</text>
+  <rect x="28.00" y="2248.95" width="166.21" height="151.54" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.2" />
+  <text x="111.11" y="2321.72" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Alacena 3</text>
+  <text x="111.11" y="2334.72" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">472×430 mm</text>
+</g>
+<g data-sheet-id="6">
+  <text x="28" y="2580" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#0f172a">Plancha #6 · Durolac / MDF 3 mm (2440×1220 mm) · Uso 55.4% / Desp. 44.6% · Kerf 4 mm</text>
+  <text x="888" y="2580" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#0369a1">→ Sentido de veta (2440 mm)</text>
+  <rect x="28" y="2604" width="860.00" height="430.00" fill="url(#wasteGrid)" stroke="#334155" stroke-width="2" />
+  <rect x="28.00" y="2604.00" width="632.31" height="324.26" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" />
+  <text x="344.16" y="2763.13" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Fondo 3mm (Paño 1/2) (R)</text>
+  <text x="344.16" y="2776.13" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">1794×920 mm</text>
+</g>
+<g data-sheet-id="7">
+  <text x="28" y="3088" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#0f172a">Plancha #7 · Durolac / MDF 3 mm (2440×1220 mm) · Uso 55.4% / Desp. 44.6% · Kerf 4 mm</text>
+  <text x="888" y="3088" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#0369a1">→ Sentido de veta (2440 mm)</text>
+  <rect x="28" y="3112" width="860.00" height="430.00" fill="url(#wasteGrid)" stroke="#334155" stroke-width="2" />
+  <rect x="28.00" y="3112.00" width="632.31" height="324.26" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" />
+  <text x="344.16" y="3271.13" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Fondo 3mm (Paño 2/2) (R)</text>
+  <text x="344.16" y="3284.13" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">1794×920 mm</text>
+</g>
+<g data-sheet-id="8">
+  <text x="28" y="3596" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#0f172a">Plancha #8 · Durolac / MDF 3 mm (2440×1220 mm) · Uso 6.7% / Desp. 93.3% · Kerf 4 mm</text>
+  <text x="888" y="3596" text-anchor="end" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="600" fill="#0369a1">→ Sentido de veta (2440 mm)</text>
+  <rect x="28" y="3620" width="860.00" height="430.00" fill="url(#wasteGrid)" stroke="#334155" stroke-width="2" />
+  <rect x="28.00" y="3620.00" width="165.70" height="149.09" fill="#fef3c7" stroke="#b45309" stroke-width="1.2" />
+  <text x="110.85" y="3691.55" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="11.0" font-weight="600" fill="#0f172a">Fondo 3mm Cajón 1/1</text>
+  <text x="110.85" y="3704.55" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="10.0" fill="#334155">470×423 mm</text>
+</g>
+</svg>

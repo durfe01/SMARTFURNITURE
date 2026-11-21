@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 540" width="100%">
+  <defs>
+    <pattern id="bpGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.6" />
+    </pattern>
+  </defs>
+  <rect width="920" height="540" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+  <rect x="0" y="0" width="920" height="44" fill="#0f2b4c" />
+  <text x="18" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#ffffff">07 — Rack TV Blanco Mixto (2 Cajones + Nicho + 2 Puertas) (REDIMENSIONADO)</text>
+  <text x="18" y="36" font-family="Consolas, monospace" font-size="10.5" fill="#7dd3fc">NUEVO MODELO VECTORIAL REDIMENSIONADO Vf · Cuerpo Melamina 2070×442×420 mm (e=18 mm)</text>
+  <text x="902" y="27" text-anchor="end" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#38bdf8">ESCALA 1:4</text>
+  <rect x="18" y="54" width="884" height="384" fill="url(#bpGrid)" stroke="#e2e8f0" />
+  <text x="347.0" y="151.4" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">ALZADO FRONTAL (PLANO XY)</text>
+  <rect x="92.00" y="177.39" width="510.00" height="108.90" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="96.43" y="286.29" width="501.13" height="12.32" fill="#e2e8f0" stroke="#334155" stroke-width="1.2" />
+  <rect x="98.43" y="183.83" width="163.04" height="46.01" fill="#ffedd5" stroke="#c2410c" stroke-width="1.2" />
+  <line x1="171.0" y1="206.8" x2="189.0" y2="206.8" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="180.0" y="226.8" text-anchor="middle" font-family="Consolas, monospace" font-size="8" fill="#9a3412">Cajón 1 (5 pzas)</text>
+  <rect x="98.43" y="233.84" width="163.04" height="46.01" fill="#ffedd5" stroke="#c2410c" stroke-width="1.2" />
+  <line x1="171.0" y1="256.8" x2="189.0" y2="256.8" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="180.0" y="276.9" text-anchor="middle" font-family="Consolas, monospace" font-size="8" fill="#9a3412">Cajón 2 (5 pzas)</text>
+  <rect x="263.48" y="181.83" width="167.04" height="100.03" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="347.0" y="234.8" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Nicho TV</text>
+  <rect x="432.52" y="183.83" width="80.52" height="96.03" fill="#fef9c3" stroke="#0284c7" stroke-width="1.2" />
+  <polyline points="432.5,183.8 513.0,231.8 432.5,279.9" fill="none" stroke="#0369a1" stroke-width="0.7" stroke-dasharray="3,3" />
+  <line x1="508.0" y1="224.8" x2="508.0" y2="238.8" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+  <rect x="515.04" y="183.83" width="80.52" height="96.03" fill="#fef9c3" stroke="#0284c7" stroke-width="1.2" />
+  <polyline points="595.6,183.8 515.0,231.8 595.6,279.9" fill="none" stroke="#0369a1" stroke-width="0.7" stroke-dasharray="3,3" />
+  <line x1="520.0" y1="224.8" x2="520.0" y2="238.8" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+  <rect x="92.00" y="177.39" width="510.00" height="4.43" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="92.00" y="281.86" width="510.00" height="4.43" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="92.00" y="177.39" width="4.43" height="108.90" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="597.57" y="177.39" width="4.43" height="108.90" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="261.26" y="181.83" width="4.43" height="100.03" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="428.30" y="181.83" width="4.43" height="100.03" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="263.48" y="229.62" width="167.04" height="4.43" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <line x1="92.0" y1="165.4" x2="602.0" y2="165.4" stroke="#0284c7" stroke-width="1.3" />
+  <text x="347.0" y="162.4" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#0284c7">Ancho X = 2070 mm</text>
+  <line x1="74.0" y1="177.4" x2="74.0" y2="286.3" stroke="#059669" stroke-width="1.3" />
+  <text x="69.0" y="231.8" text-anchor="middle" transform="rotate(-90 69.0 231.8)" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#059669">Alto Y = 442 mm</text>
+  <text x="717.7" y="151.4" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">PERFIL LATERAL (ZY)</text>
+  <rect x="666.00" y="177.39" width="103.48" height="108.90" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="663.00" y="177.39" width="3" height="108.90" fill="#b45309" />
+  <rect x="770.48" y="179.39" width="4.43" height="104.90" fill="#fef9c3" stroke="#0284c7" stroke-width="1" />
+  <line x1="666.0" y1="165.4" x2="769.5" y2="165.4" stroke="#7c3aed" stroke-width="1.3" />
+  <text x="717.7" y="162.4" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#7c3aed">Z = 420 mm</text>
+  <rect x="18" y="446" width="884" height="80" fill="#f8fafc" stroke="#0f2b4c" stroke-width="1.2" rx="4" />
+  <text x="30" y="466" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#0f2b4c">RESUMEN DE DESPIECE: 18 piezas melamina (18 mm) · 3 piezas fondo 3 mm · 2 puerta(s) · 2 cajón(es) [5 pzas/cajón]</text>
+  <text x="30" y="486" font-family="Consolas, monospace" font-size="10.5" fill="#0369a1">Planchas 244×122 cm: 2 melamina + 1 fondo 3mm · Uso 58.8% · Escala k=(1.15, 0.92, 1.05)</text>
+  <text x="30" y="506" font-family="Consolas, monospace" font-size="10" fill="#92400e">HERRAJES (NO MELAMINA): bisagras: 4 · correderas: 2 · tiradores: 4</text>
+  <text x="890" y="518" text-anchor="end" font-family="Consolas, monospace" font-size="9" fill="#64748b">Alertas estructurales: 0 · 100% Offline SmartFurniture v3.2</text>
+</svg>

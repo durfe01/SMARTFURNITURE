@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 540" width="100%">
+  <defs>
+    <pattern id="bpGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.6" />
+    </pattern>
+  </defs>
+  <rect width="920" height="540" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+  <rect x="0" y="0" width="920" height="44" fill="#0f2b4c" />
+  <text x="18" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#ffffff">10 — Librero Modular 3 Cuerpos Abierto (Roble) (REDIMENSIONADO)</text>
+  <text x="18" y="36" font-family="Consolas, monospace" font-size="10.5" fill="#7dd3fc">NUEVO MODELO VECTORIAL REDIMENSIONADO Vf · Cuerpo Melamina 1955×1840×336 mm (e=18 mm)</text>
+  <text x="902" y="27" text-anchor="end" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#38bdf8">ESCALA 1:6</text>
+  <rect x="18" y="54" width="884" height="384" fill="url(#bpGrid)" stroke="#e2e8f0" />
+  <text x="347.0" y="52.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">ALZADO FRONTAL (PLANO XY)</text>
+  <rect x="184.08" y="78.00" width="325.83" height="306.67" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="187.08" y="384.67" width="319.83" height="13.33" fill="#e2e8f0" stroke="#334155" stroke-width="1.2" />
+  <rect x="187.08" y="81.00" width="79.96" height="300.67" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="227.1" y="234.3" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Torre Izq</text>
+  <rect x="267.04" y="81.00" width="159.92" height="300.67" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="347.0" y="234.3" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Cuerpo Central</text>
+  <rect x="426.96" y="81.00" width="79.96" height="300.67" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="466.9" y="234.3" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Torre Der</text>
+  <rect x="184.08" y="78.00" width="325.83" height="3.00" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="184.08" y="381.67" width="325.83" height="3.00" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="184.08" y="78.00" width="3.00" height="306.67" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="506.92" y="78.00" width="3.00" height="306.67" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="265.54" y="81.00" width="3.00" height="300.67" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="425.46" y="81.00" width="3.00" height="300.67" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="187.08" y="320.03" width="79.96" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="187.08" y="259.90" width="79.96" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="187.08" y="199.77" width="79.96" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="187.08" y="139.63" width="79.96" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="267.04" y="305.00" width="159.92" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="267.04" y="229.83" width="159.92" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="267.04" y="154.67" width="159.92" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="426.96" y="320.03" width="79.96" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="426.96" y="259.90" width="79.96" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="426.96" y="199.77" width="79.96" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="426.96" y="139.63" width="79.96" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <line x1="184.1" y1="66.0" x2="509.9" y2="66.0" stroke="#0284c7" stroke-width="1.3" />
+  <text x="347.0" y="63.0" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#0284c7">Ancho X = 1955 mm</text>
+  <line x1="166.1" y1="78.0" x2="166.1" y2="384.7" stroke="#059669" stroke-width="1.3" />
+  <text x="161.1" y="231.3" text-anchor="middle" transform="rotate(-90 161.1 231.3)" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#059669">Alto Y = 1840 mm</text>
+  <text x="694.0" y="52.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">PERFIL LATERAL (ZY)</text>
+  <rect x="666.00" y="78.00" width="56.00" height="306.67" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="663.00" y="78.00" width="3" height="306.67" fill="#b45309" />
+  <line x1="666.0" y1="66.0" x2="722.0" y2="66.0" stroke="#7c3aed" stroke-width="1.3" />
+  <text x="694.0" y="63.0" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#7c3aed">Z = 336 mm</text>
+  <rect x="18" y="446" width="884" height="80" fill="#f8fafc" stroke="#0f2b4c" stroke-width="1.2" rx="4" />
+  <text x="30" y="466" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#0f2b4c">RESUMEN DE DESPIECE: 18 piezas melamina (18 mm) · 3 piezas fondo 3 mm · 0 puerta(s) · 0 cajón(es) [5 pzas/cajón]</text>
+  <text x="30" y="486" font-family="Consolas, monospace" font-size="10.5" fill="#0369a1">Planchas 244×122 cm: 3 melamina + 2 fondo 3mm · Uso 65.2% · Escala k=(1.15, 0.92, 1.05)</text>
+  <text x="30" y="506" font-family="Consolas, monospace" font-size="10" fill="#92400e">HERRAJES (NO MELAMINA): Sin herrajes adicionales</text>
+  <text x="890" y="518" text-anchor="end" font-family="Consolas, monospace" font-size="9" fill="#64748b">Alertas estructurales: 3 · 100% Offline SmartFurniture v3.2</text>
+</svg>

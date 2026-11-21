@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 540" width="100%">
+  <defs>
+    <pattern id="bpGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.6" />
+    </pattern>
+  </defs>
+  <rect width="920" height="540" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+  <rect x="0" y="0" width="920" height="44" fill="#0f2b4c" />
+  <text x="18" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#ffffff">02 — Despensero Microondas 2 Cuerpos</text>
+  <text x="18" y="36" font-family="Consolas, monospace" font-size="10.5" fill="#7dd3fc">MODELO VECTORIAL ORIGINAL V0 · Cuerpo Melamina 650×1820×420 mm (e=18 mm)</text>
+  <text x="902" y="27" text-anchor="end" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#38bdf8">ESCALA 1:6</text>
+  <rect x="18" y="54" width="884" height="384" fill="url(#bpGrid)" stroke="#e2e8f0" />
+  <text x="347.0" y="52.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">ALZADO FRONTAL (PLANO XY)</text>
+  <rect x="292.83" y="78.00" width="108.33" height="303.33" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="299.33" y="381.33" width="5.00" height="16.67" fill="#e2e8f0" stroke="#475569" stroke-width="1.2" stroke-dasharray="3,2" />
+  <rect x="389.67" y="381.33" width="5.00" height="16.67" fill="#e2e8f0" stroke="#475569" stroke-width="1.2" stroke-dasharray="3,2" />
+  <text x="347.0" y="392.2" text-anchor="middle" font-family="Consolas, monospace" font-size="9" fill="#92400e">PATAS EXTERNAS (100 mm · NO MELAMINA)</text>
+  <rect x="297.83" y="255.45" width="48.17" height="120.88" fill="#fef9c3" stroke="#0284c7" stroke-width="1.2" />
+  <polyline points="297.8,255.5 346.0,315.9 297.8,376.3" fill="none" stroke="#0369a1" stroke-width="0.7" stroke-dasharray="3,3" />
+  <line x1="341.0" y1="308.9" x2="341.0" y2="322.9" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+  <rect x="348.00" y="255.45" width="48.17" height="120.88" fill="#fef9c3" stroke="#0284c7" stroke-width="1.2" />
+  <polyline points="396.2,255.5 348.0,315.9 396.2,376.3" fill="none" stroke="#0369a1" stroke-width="0.7" stroke-dasharray="3,3" />
+  <line x1="353.0" y1="308.9" x2="353.0" y2="322.9" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+  <rect x="297.83" y="231.67" width="98.33" height="19.79" fill="#ffedd5" stroke="#c2410c" stroke-width="1.2" />
+  <line x1="338.0" y1="241.6" x2="356.0" y2="241.6" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="347.0" y="248.5" text-anchor="middle" font-family="Consolas, monospace" font-size="8" fill="#9a3412">Cajón 1 (5 pzas)</text>
+  <rect x="295.83" y="167.23" width="102.33" height="62.44" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="347.0" y="201.4" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Nicho Microondas</text>
+  <rect x="295.83" y="140.47" width="102.33" height="26.76" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="347.0" y="156.8" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Repisa Abierta</text>
+  <rect x="297.83" y="83.00" width="48.17" height="55.47" fill="#fef9c3" stroke="#0284c7" stroke-width="1.2" />
+  <polyline points="297.8,83.0 346.0,110.7 297.8,138.5" fill="none" stroke="#0369a1" stroke-width="0.7" stroke-dasharray="3,3" />
+  <line x1="341.0" y1="103.7" x2="341.0" y2="117.7" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+  <rect x="348.00" y="83.00" width="48.17" height="55.47" fill="#fef9c3" stroke="#0284c7" stroke-width="1.2" />
+  <polyline points="396.2,83.0 348.0,110.7 396.2,138.5" fill="none" stroke="#0369a1" stroke-width="0.7" stroke-dasharray="3,3" />
+  <line x1="353.0" y1="103.7" x2="353.0" y2="117.7" stroke="#0f172a" stroke-width="2" stroke-linecap="round" />
+  <rect x="292.83" y="78.00" width="108.33" height="3.00" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="292.83" y="378.33" width="108.33" height="3.00" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="292.83" y="78.00" width="3.00" height="303.33" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="398.17" y="78.00" width="3.00" height="303.33" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="295.83" y="251.95" width="102.33" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="295.83" y="228.17" width="102.33" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="295.83" y="165.73" width="102.33" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="295.83" y="138.97" width="102.33" height="3.00" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <line x1="292.8" y1="66.0" x2="401.2" y2="66.0" stroke="#0284c7" stroke-width="1.3" />
+  <text x="347.0" y="63.0" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#0284c7">Ancho X = 650 mm</text>
+  <line x1="274.8" y1="78.0" x2="274.8" y2="381.3" stroke="#059669" stroke-width="1.3" />
+  <text x="269.8" y="229.7" text-anchor="middle" transform="rotate(-90 269.8 229.7)" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#059669">Alto Y = 1820 mm</text>
+  <text x="701.0" y="52.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">PERFIL LATERAL (ZY)</text>
+  <rect x="666.00" y="78.00" width="70.00" height="303.33" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="663.00" y="78.00" width="3" height="303.33" fill="#b45309" />
+  <rect x="674.40" y="381.33" width="7.00" height="16.67" fill="#e2e8f0" stroke="#475569" stroke-dasharray="3,2" />
+  <rect x="720.60" y="381.33" width="7.00" height="16.67" fill="#e2e8f0" stroke="#475569" stroke-dasharray="3,2" />
+  <rect x="737.00" y="80.00" width="3.00" height="299.33" fill="#fef9c3" stroke="#0284c7" stroke-width="1" />
+  <line x1="666.0" y1="66.0" x2="736.0" y2="66.0" stroke="#7c3aed" stroke-width="1.3" />
+  <text x="701.0" y="63.0" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#7c3aed">Z = 420 mm</text>
+  <rect x="18" y="446" width="884" height="80" fill="#f8fafc" stroke="#0f2b4c" stroke-width="1.2" rx="4" />
+  <text x="30" y="466" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#0f2b4c">RESUMEN DE DESPIECE: 16 piezas melamina (18 mm) · 2 piezas fondo 3 mm · 4 puerta(s) · 1 cajón(es) [5 pzas/cajón]</text>
+  <text x="30" y="486" font-family="Consolas, monospace" font-size="10.5" fill="#0369a1">Planchas 244×122 cm: 2 melamina + 1 fondo 3mm · Uso 60.8% · Escala k=(1.00, 1.00, 1.00)</text>
+  <text x="30" y="506" font-family="Consolas, monospace" font-size="10" fill="#92400e">HERRAJES (NO MELAMINA): patas: 4 · bisagras: 8 · correderas: 1 · tiradores: 5</text>
+  <text x="890" y="518" text-anchor="end" font-family="Consolas, monospace" font-size="9" fill="#64748b">Alertas estructurales: 0 · 100% Offline SmartFurniture v3.2</text>
+</svg>

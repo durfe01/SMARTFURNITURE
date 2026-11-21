@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 540" width="100%">
+  <defs>
+    <pattern id="bpGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.6" />
+    </pattern>
+  </defs>
+  <rect width="920" height="540" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5" />
+  <rect x="0" y="0" width="920" height="44" fill="#0f2b4c" />
+  <text x="18" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" fill="#ffffff">14 — Mueble Cocina Bicolor Blanco + Roble</text>
+  <text x="18" y="36" font-family="Consolas, monospace" font-size="10.5" fill="#7dd3fc">MODELO VECTORIAL ORIGINAL V0 · Cuerpo Melamina 1600×1950×450 mm (e=18 mm)</text>
+  <text x="902" y="27" text-anchor="end" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#38bdf8">ESCALA 1:6</text>
+  <rect x="18" y="54" width="884" height="384" fill="url(#bpGrid)" stroke="#e2e8f0" />
+  <text x="347.0" y="52.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">ALZADO FRONTAL (PLANO XY)</text>
+  <rect x="222.12" y="78.00" width="249.76" height="304.39" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="224.93" y="382.39" width="244.14" height="15.61" fill="#e2e8f0" stroke="#334155" stroke-width="1.2" />
+  <rect x="226.93" y="82.81" width="54.59" height="73.68" fill="#fef9c3" stroke="#0284c7" stroke-width="1.3" />
+  <polyline points="226.9,82.8 281.5,119.6 226.9,156.5" fill="none" stroke="#0369a1" stroke-width="0.8" stroke-dasharray="4,3" />
+  <line x1="273.5" y1="111.6" x2="273.5" y2="127.6" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="254.2" y="150.5" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" fill="#0f2b4c">Alacena 1</text>
+  <rect x="285.52" y="82.81" width="54.59" height="73.68" fill="#fef9c3" stroke="#0284c7" stroke-width="1.3" />
+  <polyline points="285.5,82.8 340.1,119.6 285.5,156.5" fill="none" stroke="#0369a1" stroke-width="0.8" stroke-dasharray="4,3" />
+  <line x1="332.1" y1="111.6" x2="332.1" y2="127.6" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="312.8" y="150.5" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" fill="#0f2b4c">Alacena 2</text>
+  <rect x="344.12" y="82.81" width="54.59" height="73.68" fill="#fef9c3" stroke="#0284c7" stroke-width="1.3" />
+  <polyline points="398.7,82.8 344.1,119.6 398.7,156.5" fill="none" stroke="#0369a1" stroke-width="0.8" stroke-dasharray="4,3" />
+  <line x1="352.1" y1="111.6" x2="352.1" y2="127.6" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="371.4" y="150.5" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" fill="#0f2b4c">Alacena 3</text>
+  <rect x="224.93" y="158.49" width="175.78" height="77.68" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="312.8" y="200.3" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Nicho Mesón</text>
+  <rect x="400.71" y="80.81" width="68.36" height="155.36" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.8" />
+  <text x="434.9" y="161.5" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Estante Abierto</text>
+  <rect x="226.93" y="238.17" width="54.59" height="139.41" fill="#fef9c3" stroke="#0284c7" stroke-width="1.3" />
+  <polyline points="226.9,238.2 281.5,307.9 226.9,377.6" fill="none" stroke="#0369a1" stroke-width="0.8" stroke-dasharray="4,3" />
+  <line x1="273.5" y1="299.9" x2="273.5" y2="315.9" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="254.2" y="371.6" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" fill="#0f2b4c">Puerta 1</text>
+  <rect x="285.52" y="238.17" width="54.59" height="139.41" fill="#fef9c3" stroke="#0284c7" stroke-width="1.3" />
+  <polyline points="285.5,238.2 340.1,307.9 285.5,377.6" fill="none" stroke="#0369a1" stroke-width="0.8" stroke-dasharray="4,3" />
+  <line x1="332.1" y1="299.9" x2="332.1" y2="315.9" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="312.8" y="371.6" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" fill="#0f2b4c">Puerta 2</text>
+  <rect x="344.12" y="238.17" width="54.59" height="139.41" fill="#fef9c3" stroke="#0284c7" stroke-width="1.3" />
+  <polyline points="398.7,238.2 344.1,307.9 398.7,377.6" fill="none" stroke="#0369a1" stroke-width="0.8" stroke-dasharray="4,3" />
+  <line x1="352.1" y1="299.9" x2="352.1" y2="315.9" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="371.4" y="371.6" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" fill="#0f2b4c">Puerta 3</text>
+  <rect x="402.71" y="280.00" width="64.36" height="97.58" fill="#fef9c3" stroke="#0284c7" stroke-width="1.3" />
+  <polyline points="467.1,280.0 402.7,328.8 467.1,377.6" fill="none" stroke="#0369a1" stroke-width="0.8" stroke-dasharray="4,3" />
+  <line x1="410.7" y1="320.8" x2="410.7" y2="336.8" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="434.9" y="371.6" text-anchor="middle" font-family="Consolas, monospace" font-size="8.5" fill="#0f2b4c">Puerta 4</text>
+  <rect x="402.71" y="238.17" width="64.36" height="37.83" fill="#ffedd5" stroke="#c2410c" stroke-width="1.2" />
+  <line x1="425.9" y1="257.1" x2="443.9" y2="257.1" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" />
+  <text x="434.9" y="273.0" text-anchor="middle" font-family="Consolas, monospace" font-size="8" fill="#9a3412">Cajón 1 (5 pzas)</text>
+  <rect x="222.12" y="78.00" width="249.76" height="2.81" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="222.12" y="379.58" width="249.76" height="2.81" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="222.12" y="78.00" width="2.81" height="304.39" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="469.07" y="78.00" width="2.81" height="304.39" fill="#cbd5e1" stroke="#0f172a" stroke-width="1" />
+  <rect x="282.12" y="80.81" width="2.81" height="77.68" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="340.71" y="80.81" width="2.81" height="77.68" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="399.31" y="80.81" width="2.81" height="155.36" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="282.12" y="236.17" width="2.81" height="143.41" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="340.71" y="236.17" width="2.81" height="143.41" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="399.31" y="236.17" width="2.81" height="143.41" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="224.93" y="234.77" width="244.14" height="2.81" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="224.93" y="157.09" width="175.78" height="2.81" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="400.71" y="180.99" width="68.36" height="2.81" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="400.71" y="127.21" width="68.36" height="2.81" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <rect x="400.71" y="276.59" width="68.36" height="2.81" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9" />
+  <line x1="222.1" y1="66.0" x2="471.9" y2="66.0" stroke="#0284c7" stroke-width="1.3" />
+  <text x="347.0" y="63.0" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#0284c7">Ancho X = 1600 mm</text>
+  <line x1="204.1" y1="78.0" x2="204.1" y2="382.4" stroke="#059669" stroke-width="1.3" />
+  <text x="199.1" y="230.2" text-anchor="middle" transform="rotate(-90 199.1 230.2)" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#059669">Alto Y = 1950 mm</text>
+  <text x="701.1" y="52.0" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#0f2b4c">PERFIL LATERAL (ZY)</text>
+  <rect x="666.00" y="78.00" width="70.24" height="304.39" fill="#f8fafc" stroke="#0f172a" stroke-width="1.8" />
+  <rect x="663.00" y="78.00" width="3" height="304.39" fill="#b45309" />
+  <rect x="737.24" y="80.00" width="2.81" height="300.39" fill="#fef9c3" stroke="#0284c7" stroke-width="1" />
+  <line x1="666.0" y1="66.0" x2="736.2" y2="66.0" stroke="#7c3aed" stroke-width="1.3" />
+  <text x="701.1" y="63.0" text-anchor="middle" font-family="Consolas, monospace" font-size="10.5" font-weight="700" fill="#7c3aed">Z = 450 mm</text>
+  <rect x="18" y="446" width="884" height="80" fill="#f8fafc" stroke="#0f2b4c" stroke-width="1.2" rx="4" />
+  <text x="30" y="466" font-family="Consolas, monospace" font-size="11" font-weight="700" fill="#0f2b4c">RESUMEN DE DESPIECE: 32 piezas melamina (18 mm) · 3 piezas fondo 3 mm · 7 puerta(s) · 1 cajón(es) [5 pzas/cajón]</text>
+  <text x="30" y="486" font-family="Consolas, monospace" font-size="10.5" fill="#0369a1">Planchas 244×122 cm: 5 melamina + 2 fondo 3mm · Uso 61.5% · Escala k=(1.00, 1.00, 1.00)</text>
+  <text x="30" y="506" font-family="Consolas, monospace" font-size="10" fill="#92400e">HERRAJES (NO MELAMINA): bisagras: 17 · correderas: 1 · tiradores: 8</text>
+  <text x="890" y="518" text-anchor="end" font-family="Consolas, monospace" font-size="9" fill="#64748b">Alertas estructurales: 1 · 100% Offline SmartFurniture v3.2</text>
+</svg>
