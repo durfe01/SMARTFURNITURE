@@ -616,9 +616,11 @@ export function VectorCanvas({
     const modeText =
       det.furnitureMode === 'closed_front'
         ? 'Mueble Cerrado (Puertas/Cajones)'
-        : det.furnitureMode === 'open'
-          ? 'Mueble Abierto (Estantería/Vanos)'
-          : 'Baja Confianza';
+        : det.furnitureMode === 'mixed'
+          ? 'Mueble Mixto / Multinivel'
+          : det.furnitureMode === 'open'
+            ? 'Mueble Abierto (Estantería/Vanos)'
+            : 'Baja Confianza';
     setDetectedModeLabel(modeText);
 
     const inferredZones = inferFrontZonesFromDetection(
@@ -626,7 +628,24 @@ export function VectorCanvas({
       det.hShelves,
       det.furnitureMode,
       det.detectedHandles,
+      det.detectedZones,
     );
+
+    // Excluir las ranuras puramente internas de cajoneras de las repisas estructurales de melamina
+    const structuralShelves =
+      det.furnitureMode === 'closed_front'
+        ? []
+        : det.hShelves.filter(
+            (s) =>
+              !inferredZones.some(
+                (z) =>
+                  z.kind === 'drawers' &&
+                  s.position > z.vStart + 0.02 &&
+                  s.position < z.vEnd - 0.02 &&
+                  s.start >= z.uStart - 0.03 &&
+                  s.end <= z.uEnd + 0.03,
+              ),
+          );
 
     onUpdateTopology({
       ...topology,
@@ -635,9 +654,9 @@ export function VectorCanvas({
       homographyMatrix: homography.toUnit.map((r) => [...r]),
       shelfMode: 'custom',
       vDividers: det.vDividers,
-      hShelves: det.furnitureMode === 'closed_front' ? [] : det.hShelves,
+      hShelves: structuralShelves,
       frontZones: det.confidence >= 0.5 ? inferredZones : topology.frontZones,
-      furnitureProfileLabel: `${modeText} (${det.vDividers.length + 1} módulos)`,
+      furnitureProfileLabel: `${modeText} (${inferredZones.length} módulos)`,
       hardwareItems: nextHardware,
       detectionSource: 'auto',
       detectionConfidence: det.confidence,

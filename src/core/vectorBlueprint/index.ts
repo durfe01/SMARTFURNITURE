@@ -30,9 +30,13 @@ function escapeXml(str: string): string {
 export function inferFrontZonesFromDetection(
   vDividers: readonly NormalizedSegment[],
   hShelves: readonly NormalizedSegment[],
-  furnitureMode: 'open' | 'closed_front' | 'uncertain',
+  furnitureMode: 'open' | 'closed_front' | 'mixed' | 'uncertain',
   detectedHandles: readonly DetectedHandlePoint[] = [],
+  detectedZones?: readonly FrontZone[],
 ): FrontZone[] {
+  if (detectedZones && detectedZones.length > 0) {
+    return detectedZones.map((z) => ({ ...z }));
+  }
   const uStops = [0, ...[...vDividers].sort((a, b) => a.position - b.position).map((d) => d.position), 1];
   const zones: FrontZone[] = [];
 
@@ -41,7 +45,7 @@ export function inferFrontZonesFromDetection(
     const u1 = uStops[i + 1];
     const uMid = (u0 + u1) / 2;
 
-    if (furnitureMode !== 'closed_front') {
+    if (furnitureMode !== 'closed_front' && furnitureMode !== 'mixed') {
       zones.push({
         id: `zone_open_${i + 1}`,
         uStart: Number(u0.toFixed(4)),

@@ -488,4 +488,82 @@ describe('SmartFurniture Módulo Visión Offline (`src/core/vision/`) — v3.0',
     }
     expect(res.detectedHandles).toHaveLength(6);
   });
+
+  it('Escenario 10 (Multinivel Mixto v3.3 — 3 cubículos abiertos sup + 2 puertas nogal inf con zócalo): detecta nivel horizontal + 3 divisores parciales', () => {
+    const W = 360;
+    const H = 540;
+    const rgba = new Uint8ClampedArray(W * H * 4);
+    const rng = createRng(1010);
+
+    const paint = (x0: number, y0: number, x1: number, y1: number, rgb: [number, number, number]) => {
+      for (let y = Math.max(0, y0); y < Math.min(H, y1); y++) {
+        for (let x = Math.max(0, x0); x < Math.min(W, x1); x++) {
+          const n = (rng() - 0.5) * 5;
+          const i = (y * W + x) * 4;
+          rgba[i] = Math.max(0, Math.min(255, Math.round(rgb[0] + n)));
+          rgba[i + 1] = Math.max(0, Math.min(255, Math.round(rgb[1] + n)));
+          rgba[i + 2] = Math.max(0, Math.min(255, Math.round(rgb[2] + n)));
+          rgba[i + 3] = 255;
+        }
+      }
+    };
+
+    // Carcasa grafito exterior + nivel superior abierto (v ∈ [0.66..1.0] => y ∈ [0..183])
+    paint(0, 0, W, H, [96, 98, 102]);
+    // Cavidades oscuras superiores (3 cubículos separados por 2 cantos grafito)
+    paint(12, 12, 118, 178, [34, 36, 40]);
+    paint(128, 12, 232, 178, [34, 36, 40]);
+    paint(242, 12, W - 12, 178, [34, 36, 40]);
+    // Nivel inferior: 2 puertas nogal con ranura central + zócalo grafito continuo abajo
+    paint(10, 186, W - 10, H - 36, [118, 76, 48]);
+    paint(179, 186, 182, H - 36, [24, 16, 10]); // ranura vertical entre puertas
+    paint(0, H - 36, W, H, [96, 98, 102]); // zócalo inferior
+
+    const res = analyzeRectifiedFurniture(rgba, W, H, { x: 800, y: 1200 }, 18);
+    expect(res.furnitureMode).toBe('mixed');
+    expect(res.confidence).toBeGreaterThanOrEqual(0.65);
+    expect(res.hShelves.length).toBeGreaterThanOrEqual(1);
+    expect(res.vDividers.length).toBe(3);
+    // Verificar presencia de zonas abiertas arriba y puertas abajo
+    expect(res.detectedZones?.some((z) => z.kind === 'open')).toBe(true);
+    expect(res.detectedZones?.some((z) => z.kind === 'door_left' || z.kind === 'door_right')).toBe(true);
+  });
+
+  it('Escenario 11 (Bicolor Blanco + Roble v3.3 — 2 puertas blancas + 3 cajones mixtos): detecta escalón de color y ranuras sutiles', () => {
+    const W = 540;
+    const H = 220;
+    const rgba = new Uint8ClampedArray(W * H * 4);
+    const rng = createRng(1111);
+
+    const paint = (x0: number, y0: number, x1: number, y1: number, rgb: [number, number, number]) => {
+      for (let y = Math.max(0, y0); y < Math.min(H, y1); y++) {
+        for (let x = Math.max(0, x0); x < Math.min(W, x1); x++) {
+          const n = (rng() - 0.5) * 4;
+          const i = (y * W + x) * 4;
+          rgba[i] = Math.max(0, Math.min(255, Math.round(rgb[0] + n)));
+          rgba[i + 1] = Math.max(0, Math.min(255, Math.round(rgb[1] + n)));
+          rgba[i + 2] = Math.max(0, Math.min(255, Math.round(rgb[2] + n)));
+          rgba[i + 3] = 255;
+        }
+      }
+    };
+
+    // Frente blanco uniforme
+    paint(0, 0, W, H, [238, 238, 238]);
+    // Cajón superior derecho en roble cálido (bicolor!)
+    paint(360, 4, W - 4, 74, [202, 168, 122]);
+    // Ranura sutil blanco-sobre-blanco entre puerta 1 y puerta 2 (x = 180)
+    paint(179, 0, 181, H, [170, 170, 170]);
+    // Ranura sutil bajo el cajón roble entre puerta 2 y cajones blancos (x = 360, y = 74..H)
+    paint(359, 74, 361, H, [170, 170, 170]);
+    // Ranura horizontal sutil entre cajón 2 y cajón 3 (y = 148, x = 360..W)
+    paint(360, 147, W, 149, [168, 168, 168]);
+
+    const res = analyzeRectifiedFurniture(rgba, W, H, { x: 1600, y: 640 }, 18);
+    expect(res.furnitureMode).toBe('closed_front');
+    expect(res.confidence).toBeGreaterThanOrEqual(0.65);
+    expect(res.vDividers).toHaveLength(2);
+    expect(res.hShelves).toHaveLength(2);
+    expect(res.detectedZones?.some((z) => z.kind === 'drawers' && z.drawerCount === 3)).toBe(true);
+  });
 });

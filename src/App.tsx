@@ -158,7 +158,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <div className="brand-title">SmartFurniture v3.2 — Foto → Plano Vectorial → 3D &amp; Corte 244×122</div>
+          <div className="brand-title">SmartFurniture v3.3 — Foto → Plano Vectorial → 3D &amp; Corte 244×122</div>
           <div className="brand-sub">
             100% Local Offline · INACAP Unidad 3 · Puertas, Cajones (5 pzas), Herrajes y Planchas 244×122 cm
           </div>
