@@ -1,0 +1,379 @@
+================================================================================
+SMARTFURNITURE — AUDITORÍA TÉCNICA PRE-IMPLEMENTACIÓN (v2.1 Rev. 2) Y PROMPTS
+================================================================================
+Sincronizado 100% con:
+  - pauta.md (v2.1 Rev. 2)
+  - docs/ANALISIS_TECNICO_v2.1.md (v2.1 Rev. 2)
+  - docs/RESUMEN_PARA_EL_EQUIPO.md (v2.1 Rev. 2)
+  - .agents/skills/* (6 skills sincronizadas)
+  - docs/evidencia/* (toolchain-spike, zhang_sim, bandDetector, guillotine_sim)
+
+Restricción clave: 100% ejecución local/offline en navegador (sin APIs ni CDNs).
+Orden de ejecución recomendado:
+  Bloque 1 -> Bloque 2 -> Módulo Visión (src/core/vision/) -> Bloque 3 -> Bloque 4
+Regla de compuerta: No avanzar al bloque siguiente sin Vitest (y `tsc -b && vite build`
+desde Bloque 3) al 100% en verde.
+Nota Termux (Android): Si `npx`/`npm run` fallan por falta de `/usr/bin/env`, usar:
+  node node_modules/vitest/vitest.mjs run
+  node node_modules/typescript/bin/tsc -b
+  node node_modules/vite/bin/vite.js build
+
+--------------------------------------------------------------------------------
+1. HALLAZGOS CRÍTICOS DE AUDITORÍA (v2.0 + v2.1 Rev. 2 — TODOS RESUELTOS)
+--------------------------------------------------------------------------------
+
+A. Contratos de Datos y Geometría 3D (`src/types/contracts.ts`)
+  1. Sistema 3D mano derecha en mm (congelado):
+     Origen [0, 0, 0] en esquina inferior-izquierda-TRASERA (+X derecha, +Y arriba,
+     +Z frente visible). Fondo 3 mm clavado atrás en z ∈ [-3, 0] (cz = -1.5 mm).
+  2. Correspondencia física 1:1 en `matrizDespiece`:
+     Una `BoardPiece` por placa física (`cantidad: 1`) con `posicion3D: [cx, cy, cz]`
+     y `dimensiones3D: [dx, dy, dz]` axis-aligned. Consolidación en `matrixNx5` y
+     `consolidatedRows`.
+  3. Espacio interior normativo + conversión exterior -> interior (v2.1):
+     `NormalizedSegment` vive SIEMPRE en espacio INTERIOR [0, 1]^2. La homografía de
+     la foto entrega espacio EXTERIOR; convertir SIEMPRE con `exteriorToInterior(p, e, dim)`
+     para evitar el bug latente de ~9 mm (`exteriorToInterior(0.25, 18, 800) ≈ 0.2382`).
+  4. Convención de repisas `custom` vs `equidistant`:
+     - `equidistant`: `shelfProgression.terms[n-1]` es la CARA INFERIOR `a_n` -> `cy = a_n + e/2`.
+     - `custom`: `hShelves[i].position` (`v`) es el CENTRO vertical en `y_int`
+       (`cy = e + v * y_int`), validando que no solape base ni cubierta.
+  5. Vanos mixtos — cruces Y contactos en extremos (v2.1):
+     Al calcular una repisa sobre `[uStart, uEnd]`, subdividirla en cada `vDivider`
+     que la cruza Y también descontar `e/2` cuando `|uStart - div.position| <= 1e-3`
+     o `|uEnd - div.position| <= 1e-3`. Usar `1 / 3` y `2 / 3` exactos en Preset 2
+     (repisa central = 503.33 mm; en Preset 3 Clóset = 723 mm).
+  6. Tapacanto y exclusión del fondo 3 mm:
+     `top`/`bottom` miden `ancho` (`top` = canto frontal +Z); `left`/`right` miden `alto`.
+     Fondo Durolac 3 mm: `respectGrain: false`, todos los `edges: false`.
+
+B. Validación Matemática (Unidad 3 y Etapa 2)
+  7. Escalamiento matricial correcto:
+     `scaleBaseMatrix(M0, kx, ky)` aplica `M = M0 · diag(kx, ky, 1)` preservando `e = 18 mm`
+     (Etapa 2 exacta: área 0.8800 -> 1.2672 m², tapacanto 6.80 -> 8.16 m).
+  8. Progresión aritmética exacta:
+     `H_int = y_f - 2e`, `s_libre = (H_int - N*e) / (N + 1)`, `a_1 = e + s_libre`,
+     `d = s_libre + e`, `a_n = a_1 + (n - 1)*d`. Alerta crítica si `H_int - N*e <= 0`.
+  9. Encuentro en esquinas y subdivisión del fondo 3 mm:
+     - `topOverSides`: cubierta/base `x_f × z_f`, laterales `(y_f - 2e) × z_f`.
+     - `topBetweenSides`: laterales `y_f × z_f`, cubierta/base `(x_f - 2e) × z_f`.
+     - Subdividir fondo 3 mm verticalmente si `(x_f > minS && y_f > minS)` O si `x_f > maxS`
+       O si `y_f > maxS` (usando `backPanelSheetDimensions ?? sheetDimensions`).
+
+C. Cutting Stock 2D y Carpintería Real (`src/core/cuttingStock/`)
+  10. Guillotina 2 etapas por defecto + rotación real sin veta (v2.1 Rev. 2):
+      - Por defecto `packingStrategy: 'guillotine'` (cortable en seccionadora real)
+        + opción `'maxrects'` (BSSF estilo CNC).
+      - Separación estricta por espesor (`18 mm` vs `3 mm`), respetando `trimMm` (default 0)
+        y `backPanelSheetDimensions` (selector Chile: `2500×1830` melamina, `2440×1520` Durolac;
+        default pauta `2440×1220`).
+      - Virtual-pad kerf: capacidad `(usableW + s) × (usableH + s)` reservando `(pw + s) × (ph + s)`.
+      - Cuando `respectGrain = false`, evaluar políticas multi-orientación (`default`, `preferRotated`,
+        `mixed`) para que rotar piezas realmente reduzca franjas/planchas (ej. módulo `900×1150×410`:
+        2 planchas -> 1 plancha, 33.7% -> 67.4%).
+
+D. Visión Offline Foto -> 3D (`src/core/vision/` y `VectorCanvas.tsx`)
+  11. Proporción W/H con focal fija (v2.1):
+      Usar fórmula vectorial de Zhang con focal fija (`f35 = 26 mm` por defecto o selector 1×/2×),
+      NUNCA `f` estimada (degenera en 43% de fotos típicas de clóset). No escribir parser EXIF.
+  12. Detector robusto a fotos reales (v2.1 Rev. 2):
+      - Normalización flat-field de luminancia + crominancia normalizada RGBA (distingue roble/madera
+        de sombras grises de igual luminancia).
+      - Sembrado en los 4 bordes exteriores (mediana + MAD resistente a jitter de clic) + soporte
+        de `seedPoint` (gotero de 1 clic en la UI).
+      - Anclaje unilateral sin brecha consciente de paralaje (resuelve caras visibles de ~100 mm
+        en repisas bajas/altas y divisores descentrados; 8/8 escenarios en `band_test.ts`, err <= 1.2 mm).
+      - Métrica `confidence` (0..1): si `< 0.5` (`interiorMatch > 0.5`), avisar y guiar trazado manual.
+
+E. Toolchain Fijado y Regla 100% Offline
+  13. Dependencias EXACTAS verificadas (`docs/evidencia/toolchain-spike/package.json`):
+      `react: 18.3.1`, `react-dom: 18.3.1`, `three: 0.162.0`, `@types/three: 0.162.0`,
+      `@react-three/fiber: 8.18.0`, `@react-three/drei: 9.122.0`, `lucide-react: ^0.454.0`,
+      `vite: ^6.3.5`, `vitest: ^3.2.4`, `@vitejs/plugin-react: ^4.3.4`, `typescript: ~5.8.3`.
+      PROHIBIDO `<Environment preset="..." />`, `<Text />` con fuente CDN y Google Fonts.
+
+--------------------------------------------------------------------------------
+2. FLUJOS DE VALIDACIÓN Y PRESETS OFICIALES
+--------------------------------------------------------------------------------
+- Preset 1 — Estantería (`estanteria`): V_f = (800, 1800, 320), `equidistant`, N = 4,
+  `vDividers = []`, `hasBackPanel = false`, `topOverSides`. (Pandeo si x_f > 886 mm).
+- Preset 2 — Rack de TV (`rack_tv`): V_f = (1600, 550, 400), `custom`, `vDividers` en
+  `u = 1 / 3` y `2 / 3` EXACTOS, 1 repisa central en `v = 0.5` sobre `[1 / 3, 2 / 3]`
+  (`ancho = 503.33 mm`), `hasBackPanel = false`, `topBetweenSides`.
+- Preset 3 — Clóset (`closet`): V_f = (1500, 2100, 550), `custom`, 1 divisor central
+  `u = 0.5`, 3 repisas izq (`v = 0.25, 0.50, 0.75` en `[0, 0.5]`) + 1 repisa der
+  (`v = 0.82` en `[0.5, 1]`) (`ancho = 723 mm`), `hasBackPanel = true` (2 fondos 750×2100×3 mm),
+  `topOverSides`.
+
+================================================================================
+3. PROMPTS DEFINITIVOS POR BLOQUE (v2.1 Rev. 2 — LISTOS PARA EJECUTAR)
+================================================================================
+
+--------------------------------------------------------------------------------
+PROMPT BLOQUE 1 — Scaffold Fijado, Contratos v2.1 Rev. 2, Homografía y Motor Matemático
+--------------------------------------------------------------------------------
+```text
+Inicializa el proyecto Vite + React 18 + TypeScript + Vitest en el directorio raíz tomando
+como base las versiones EXACTAS verificadas en `docs/evidencia/toolchain-spike/package.json`.
+
+REGLAS ESTRICTAS DE ESTE BLOQUE:
+- NO borres ni sobrescribas la documentación ni `docs/evidencia/` ni `.agents/skills/`.
+- Fija en `package.json`: `react: "18.3.1"`, `react-dom: "18.3.1"`, `"@types/react": "^18.3.12"`,
+  `"@types/react-dom": "^18.3.1"`, `"@vitejs/plugin-react": "^4.3.4"`, `"typescript": "~5.8.3"`,
+  `"vite": "^6.3.5"`, `"vitest": "^3.2.4"` (NO instales `vite@latest` ni Three.js aún).
+- Scripts en `package.json`: `"dev": "vite"`, `"build": "tsc -b && vite build"`, `"test": "vitest run"`,
+  `"test:watch": "vitest"`.
+- NO construyas interfaz React todavía: solo contratos congelados, lógica matemática pura, presets y tests.
+
+1. Crea `src/types/contracts.ts` (ÚNICA FUENTE DE VERDAD INMUTABLE, v2.1 Rev. 2):
+   - `MelamineMaterial = 'blanco' | 'roble' | 'grafito'`
+   - `PieceMaterial = MelamineMaterial | 'durolac_3mm'`
+   - `PieceType = 'cubierta' | 'base' | 'lateral' | 'division_vertical' | 'repisa' | 'fondo'`
+   - `Point2D = { x: number; y: number }`
+   - `NormalizedSegment = { id: string; position: number; start: number; end: number }`
+     (Documenta en JSDoc: espacio INTERIOR [0,1]^2 normativo; u=0 izq -> 1 der, v=0 base -> 1 cubierta;
+     en repisas `custom`, `position` es el CENTRO vertical `cy = e + v * y_int`; salidas de foto/homografía
+     están en espacio EXTERIOR y deben convertirse con `exteriorToInterior()`).
+   - `FurnitureTopology`: `{ viewsMode: 1 | 2; aspectRatioXY: number; aspectRatioZY?: number; quadCorners?: [Point2D, Point2D, Point2D, Point2D]; homographyMatrix?: number[][]; vDividers: NormalizedSegment[]; hShelves: NormalizedSegment[]; shelfMode: 'equidistant' | 'custom'; equalShelfCount: number; hasBackPanel: boolean; detectionSource?: 'manual' | 'auto' | 'preset'; detectionConfidence?: number }`
+     (Documenta que `quadCorners` usa orden horario estricto `[TL, TR, BR, BL]` mapeado a `(0,1), (1,1), (1,0), (0,0)`).
+   - `ScaleAndBoardParams`: `{ targetDimensions: { x: number; y: number; z: number }; referenceDimensions: { x: number; y: number; z: number }; boardThickness: number; backPanelThickness: number; sheetDimensions: { width: number; height: number }; backPanelSheetDimensions?: { width: number; height: number }; trimMm?: number; kerf: number; respectGrain: boolean; packingStrategy?: 'guillotine' | 'maxrects'; cornerJointType: 'topOverSides' | 'topBetweenSides'; edgeBandingMode: 'fullPerimeter' | 'visibleEdgesOnly'; material: MelamineMaterial }`
+   - `EdgeBandingFlags = { top: boolean; bottom: boolean; left: boolean; right: boolean }`
+   - `BoardPiece`: `{ id: string; nombre: string; tipo: PieceType; ancho: number; alto: number; espesor: number; cantidad: number; respectGrain: boolean; edges: EdgeBandingFlags; posicion3D: [number, number, number]; dimensiones3D: [number, number, number]; rotacion3D: [number, number, number]; material: PieceMaterial }`
+     (Documenta sistema 3D mano derecha en mm: origen [0,0,0] inferior-izquierda-TRASERA; +X der, +Y arriba, +Z frente; `cantidad: 1` en `matrizDespiece`).
+   - `StructuralAlert`: `{ id: string; severidad: 'warning' | 'critical'; tipo: 'pandeo' | 'dimension_invalida' | 'sobredimension_plancha'; mensaje: string; piezaId: string; luzLibreMm?: number }`
+   - `ShelfProgressionData = { count: number; hInteriorMm: number; clearSpanMm: number; a1: number; d: number; terms: number[] }`
+   - `MatrixNx5Row = { nombre: string; ancho: number; alto: number; espesor: number; cantidad: number; material: PieceMaterial }`
+   - `DespieceResult`: `{ scaleFactors: { kx: number; ky: number; kz: number }; shelfProgression: ShelfProgressionData; matrizDespiece: BoardPiece[]; matrixNx3: [number, number, number][]; matrixNx5: [number, number, number, number, PieceMaterial][]; consolidatedRows: MatrixNx5Row[]; totalNetAreaM2: number; backPanelAreaM2: number; totalEdgeBandingMeters: number; alerts: StructuralAlert[] }`
+   - `BaseMatrixScaleResult`: `{ scaledMatrix: [number, number, number][]; originalAreaM2: number; scaledAreaM2: number; originalEdgeBandingMeters: number; scaledEdgeBandingMeters: number }`
+   - `PlacedRectangle = { idPieza: string; nombre: string; x: number; y: number; ancho: number; alto: number; rotado: boolean }`
+   - `SheetLayout = { sheetId: number; espesorMm: number; materialLabel: string; anchoSheet: number; altoSheet: number; piezasColocadas: PlacedRectangle[]; usoPorcentaje: number; desperdicioPorcentaje: number }`
+   - `CuttingPlanResult`: `{ sheetsUsed: SheetLayout[]; unplacedPieces: BoardPiece[]; totalSheetsCount: number; melamineSheetsCount: number; backPanelSheetsCount: number; usagePercentage: number; wastePercentage: number; svgMarkup: string }`
+
+2. Implementa `src/core/mathEngine/homography.ts` (álgebra lineal pura, cero dependencias):
+   - `computeHomography(src, dst)`: eliminación gaussiana 8x8 con pivoteo parcial (`null` si singular/degenerado).
+   - `invertMatrix3x3(H)`: inversa por cofactores (`null` si `|det| < 1e-10`).
+   - `computeQuadToUnitHomography(quadCorners)`: `{ toUnit, toCanvas }` mapeando `[TL, TR, BR, BL]` a `[(0,1), (1,1), (1,0), (0,0)]`.
+   - `applyHomography(H, pt)`: división homogénea con guarda ante `|w| < 1e-10`.
+
+3. Implementa `src/core/mathEngine/presets.ts`:
+   - `estanteria`: `(800, 1800, 320)`, `equidistant`, `equalShelfCount: 4`, sin fondo, `topOverSides`, `detectionSource: 'preset'`.
+   - `rack_tv`: `(1600, 550, 400)`, `custom`, divisores en `1 / 3` y `2 / 3` EXACTOS, 1 repisa `v = 0.5` sobre `[1 / 3, 2 / 3]`, sin fondo, `topBetweenSides`, `detectionSource: 'preset'`.
+   - `closet`: `(1500, 2100, 550)`, `custom`, 1 divisor `u = 0.5`, 3 repisas izq (`0.25, 0.5, 0.75` en `[0, 0.5]`) + 1 repisa der (`0.82` en `[0.5, 1]`), `hasBackPanel: true`, `topOverSides`, `detectionSource: 'preset'`.
+
+4. Implementa `src/core/mathEngine/index.ts` (funciones puras):
+   - `exteriorToInterior(p, e, dim)` e `interiorToExterior(p, e, dim)`.
+   - `scaleBaseMatrix(M0, kx, ky)` preservando `e`.
+   - `calculateShelfProgression(yExteriorMm, boardThickness, shelfCount)` (`terms` = cara inferior `a_n`; `cy = a_n + e/2`).
+   - `calculateDespiece(topology, params)`:
+     * Descuentos exactos `topOverSides` y `topBetweenSides`.
+     * `vDividers` continuos en `[start, end]`.
+     * Repisas `equidistant` (`cy = a_n + e/2`) y `custom` (`cy = e + v * y_int`, validando que no solapen base/cubierta).
+     * Vanos mixtos: subdividir en cada `vDivider` cruzado Y descontar `e/2` en extremos que coincidan (`<= 1e-3`) con un `vDivider` activo.
+     * Fondo 3 mm (`cz = -backPanelThickness / 2`, `material: 'durolac_3mm'`, `respectGrain: false`, `edges` todos `false`): subdividir verticalmente sobre `vDividers` (o en paños iguales) si `(x_f > minS && y_f > minS)` O `x_f > maxS` O `y_f > maxS` usando `backPanelSheetDimensions ?? sheetDimensions`.
+     * Generar `matrixNx3`, `matrixNx5`, `consolidatedRows`, sumatorias y alertas (`pandeo` > 850 mm, `dimension_invalida` si interior <= 0).
+
+5. Crea `src/core/mathEngine/mathEngine.test.ts` y valida el 100% en Vitest:
+   - Etapa 2 exacta (`0.8800 -> 1.2672 m²`, `6.80 -> 8.16 m`, `e = 18 mm`).
+   - `exteriorToInterior(0.25, 18, 800)` ≈ `0.2382` e ida/vuelta con `interiorToExterior`.
+   - Descuentos `topOverSides` / `topBetweenSides` y cero solapamiento 3D AABB en los 3 presets.
+   - Repisa central de `rack_tv` ≈ `503.33 mm`; repisas de `closet` = `723 mm` exactos.
+   - Progresión aritmética `N = 3, 4, 5` en `1800 mm` y alerta de pandeo (`x_f = 1000 mm` -> desaparece con divisor en `u = 0.5`).
+   - Subdivisión de fondo 3 mm en `closet` y también cuando un solo eje excede `2440 mm`.
+   - Homografía: mapeo exacto con eje Y invertido, ida y vuelta `< 1e-6`, cuadrilátero degenerado -> `null`.
+
+Ejecuta Vitest y confirma 100% en verde antes de pasar al Bloque 2.
+```
+
+--------------------------------------------------------------------------------
+PROMPT BLOQUE 2 — Optimizador Cutting Stock 2D (Guillotina + MaxRects) y SVG Offline
+--------------------------------------------------------------------------------
+```text
+Implementa el motor de optimización de corte 2D en `src/core/cuttingStock/` SIN modificar
+`src/types/contracts.ts` ni `src/core/mathEngine/`. Usa `docs/evidencia/guillotine_sim.ts`
+como referencia verificada.
+
+1. Crea `src/core/cuttingStock/optimizer.ts`:
+   - SEPARACIÓN ESTRICTA DE ESPESORES: agrupa piezas por `espesor` (`18 mm` Melamina vs `3 mm`
+     Fondo Durolac/MDF) y selecciona la dimensión de plancha correcta (`params.sheetDimensions` para
+     18 mm; `params.backPanelSheetDimensions ?? params.sheetDimensions` para 3 mm).
+   - MARGEN DE ESCUADRADO (`trimMm = params.trimMm ?? 0`): área útil `(W - 2*trimMm) × (H - 2*trimMm)`,
+     con coordenadas finales desplazadas en `+trimMm`.
+   - MANEJO EXACTO DEL KERF (`s = params.kerf`): truco de padding virtual `(usableW + s) × (usableH + s)`
+     reservando `(pw + s) × (ph + s)` y registrando cotas reales `{ x, y, ancho: pw, alto: ph }`.
+   - ESTRATEGIA POR DEFECTO (`packingStrategy ?? 'guillotine'`):
+     * Guillotina de 2 etapas (franjas a lo largo del eje de veta `width`, llenadas por FFD con tolerancia
+       de altura `<= 25%` y apiladas en planchas).
+     * SENTIDO DE VETA REAL: si `params.respectGrain && piece.respectGrain`, prohíbe rotar (`rotado: false`).
+       Si la rotación está permitida, evalúa políticas multi-orientación (`default`, `preferRotated`, `mixed`)
+       eligiendo el mejor resultado (menos `unplacedPieces`, menos planchas, menos franjas), garantizando que
+       desactivar `respectGrain` produzca rotación real y ahorro de planchas cuando sea posible.
+   - ESTRATEGIA OPCIONAL (`packingStrategy === 'maxrects'`):
+     * MaxRects BSSF con poda de rectángulos libres redundantes, respetando exactamente las mismas reglas
+       de veta, kerf, `trimMm` y separación por espesor.
+   - PIEZAS SOBREDIMENSIONADAS: si una pieza no cabe en una plancha vacía (considerando rotación permitida),
+     enviarla a `unplacedPieces` sin bucles infinitos.
+   - MÉTRICAS: `usoPorcentaje`, `desperdicioPorcentaje = 100 - usoPorcentaje`, `usagePercentage`,
+     `wastePercentage = 100 - usagePercentage`, `totalSheetsCount`, `melamineSheetsCount`, `backPanelSheetsCount`.
+
+2. Crea `src/core/cuttingStock/svgGenerator.ts`:
+   - `renderCuttingPlanSvg(sheets: SheetLayout[], kerf: number, trimMm?: number): string`.
+   - 100% offline (`font-family="system-ui, -apple-system, sans-serif"`), XML-safe (escapa `& < > " '`),
+     `viewBox` explícito, planchas apiladas con encabezado (`Plancha #N · Material · Uso / Desperdicio`),
+     flecha de veta (`→ Veta`), grilla de desperdicio, margen de trim si `trimMm > 0`, colores por tipo,
+     cotas `ancho × alto mm` y marca `(R)` si `rotado === true`.
+
+3. Crea `src/core/cuttingStock/index.ts` exportando `generateCuttingPlan(pieces, params): CuttingPlanResult`.
+
+4. Crea `src/core/cuttingStock/cuttingStock.test.ts` verificando:
+   - Cero solapamiento, distancia pairwise `>= kerf` y límites estrictos dentro de `[trimMm, W - trimMm]`.
+   - Casos borde de kerf (`2440×1220` cabe; `2×(1218×600)` en 1 fila; `2×(1220×600)` en 2 filas; `2600×1500` en `unplacedPieces`).
+   - Bloqueo estricto de veta (`respectGrain = true` -> cero `rotado: true` en melamina) Y mejora real al
+     desactivarlo (`módulo 900×1150×410`: 2 planchas con veta -> 1 plancha sin veta con piezas rotadas).
+   - Separación 18 mm vs 3 mm en Preset 3 (`closet`) + formato chileno (`2500×1830` / `2440×1520`) con `unplacedPieces = []` y `usage + waste === 100`.
+   - Ambas estrategias (`'guillotine'` y `'maxrects'`) pasando invariantes geométricos.
+   - `svgMarkup` XML válido con etiquetas y dimensiones.
+
+Ejecuta Vitest y confirma 100% en verde (Bloques 1 + 2).
+```
+
+--------------------------------------------------------------------------------
+PROMPT MÓDULO VISIÓN (Paralelo / Pre-Bloque 3) — Núcleo Offline `src/core/vision/`
+--------------------------------------------------------------------------------
+```text
+Implementa el motor puro de visión computacional offline en `src/core/vision/` (cero React,
+cero librerías externas, cero red, cero WASM) SIN romper `contracts.ts`, `mathEngine` ni `cuttingStock`.
+Usa `docs/evidencia/bandDetector.ts` y `docs/evidencia/zhang_sim.ts` como referencia verificada.
+
+1. Crea `src/core/vision/rectify.ts`:
+   - `estimateAspectRatioFixedFocal(quadCorners, imgW, imgH, focal35mm = 26)`: fórmula vectorial de Zhang
+     con focal fija `f_px = (focal35mm / 43.27) * Math.hypot(imgW, imgH)` (NO estimar `f`; fallback a
+     razón euclidiana solo si el resultado no es finito). No escribir parser EXIF.
+   - `computeRectifiedSize(xMm, yMm, eMm)`: `W = Math.max(360, Math.ceil(6 * xMm / eMm))`,
+     `H = Math.round(W * yMm / xMm)` (garantiza >= 6 px por canto de 18 mm).
+   - `rectifyImageRGBA(srcRgba, srcW, srcH, toCanvas, dstW, dstH)`: muestreo bilineal puro en RGBA
+     mapeando fila 0 = cubierta (`v = 1`) y fila `dstH - 1` = base (`v = 0`).
+
+2. Crea `src/core/vision/bandDetector.ts`:
+   - Porta la implementación verificada de `docs/evidencia/bandDetector.ts` (v2.1 Rev. 2):
+     * Canales: luminancia con normalización flat-field (`L / boxBlur(L, W/8)`) + crominancia normalizada
+       RGBA `(R-G)/(R+G+B+15)` y `(B-0.5*(R+G))/(R+G+B+15)`.
+     * Sembrado robusto en los 4 bordes exteriores (mediana + MAD) con opción `seedPoint?: { u; v }`
+       para el gotero de 1 clic desde la UI.
+     * Anclaje unilateral sin brecha consciente de paralaje (`parallaxAware = true`, `horizonV = 0.5`)
+       para localizar el canto frontal exacto de 18 mm aunque se vea la cara superior/inferior de la repisa.
+     * Prior estructural para divisores verticales continuos de cubierta a base + búsqueda vano por vano
+       de repisas + fusión de repisas colineales.
+     * Conversión a espacio INTERIOR usando `exteriorToInterior` de `src/core/mathEngine/`.
+     * Cálculo de `interiorMatch` y `confidence` (`0..1`; `< 0.5` indica baja confianza / blanco sobre blanco).
+
+3. Crea `src/core/vision/index.ts`:
+   - Exporta `analyzeRectifiedFurniture(rgba, W, H, dimsMm, boardThickness, opts?)` retornando
+     `{ vDividers: NormalizedSegment[], hShelves: NormalizedSegment[], confidence, interiorMatch, refLum }`.
+
+4. Crea `src/core/vision/vision.test.ts` en Vitest portando los 8 escenarios de `docs/evidencia/band_test.ts`
+   (Estantería, Rack TV, Clóset, Grafito, Paralaje real 550 mm a 3 m, Jitter de clic 3 px, Roble igual
+   luminancia por croma, y Blanco-sobre-blanco marcado `confidence < 0.5`), más test de `estimateAspectRatioFixedFocal`
+   (clóset inclinado 15° con error < 3%) y test de `rectifyImageRGBA` en una imagen sintética inclinada.
+
+Ejecuta Vitest y confirma 100% en verde (Bloques 1 + 2 + Visión).
+```
+
+--------------------------------------------------------------------------------
+PROMPT BLOQUE 3 — Visor 3D Paramétrico Offline, Panel Matemático y App con Presets
+--------------------------------------------------------------------------------
+```text
+Construye la interfaz interactiva conectando `mathEngine` (Bloque 1) y `cuttingStock` (Bloque 2),
+SIN modificar contratos ni lógica probada de los bloques anteriores.
+
+RESTRICCIONES CRÍTICAS (100% OFFLINE + VERSIONES FIJADAS):
+- Instala EXACTAMENTE estas versiones verificadas en `docs/evidencia/toolchain-spike/package.json`:
+  `three@0.162.0`, `@types/three@0.162.0`, `@react-three/fiber@8.18.0`, `@react-three/drei@9.122.0`,
+  `lucide-react@^0.454.0`. NUNCA instales `three@latest` (rompe R3F v8).
+- PROHIBIDO usar `<Environment preset="..." />`, `<Text />` con fuentes CDN, Google Fonts o recursos
+  remotos. Usar luces nativas Three.js, `THREE.CanvasTexture`, `<Edges />`, `<Line />`, `<Html />`
+  con `system-ui, sans-serif` y `<gridHelper />`.
+
+1. Implementa `src/components/viewer3d/Viewer3D.tsx`:
+   - Recibe `despiece`, `params`, `explodeFactor` (0..1) y callbacks de vista/material.
+   - Convierte mm a metros (`* 0.001`), centra el mueble en `[-x_f/2000, 0, -z_f/2000]` sobre `y = 0`.
+   - Renderiza cada `BoardPiece` de `despiece.matrizDespiece` con `<boxGeometry args={[dx/1000, dy/1000, dz/1000]} />`
+     y `<Edges />`.
+   - Texturas procedurales `THREE.CanvasTexture` memorizadas con `useMemo` y liberadas en cleanup (`dispose()`):
+     Blanco Estándar, Roble Claro (vetas), Grafito Mate y Durolac 3 mm.
+   - Resalta en ámbar/rojo las repisas presentes en `despiece.alerts` (pandeo > 850 mm).
+   - Vista Explotada (`0%–100%`) desplazando desde `[x_f/2, y_f/2, z_f/2]` (fondo 3 mm hacia `-Z`).
+   - Cotas 3D dinámicas (`x_f`, `y_f`, `z_f` mm) con `<Line />` + `<Html center>` y `OrbitControls`.
+
+2. Implementa `src/components/mathPanel/MathPanel.tsx`:
+   - Pestañas/secciones claras y legibles para grabación de video:
+     a) **Unidad 3 en Vivo:** `V_f`, `V_0` (botón *"Fijar V₀ actual"*), `k_x, k_y, k_z`, nota de espesor
+        invariante `e = 18 mm`, progresión aritmética (`H_int, s_libre, a_1, d, términos a_n`), matriz `H (3×3)`
+        si existe, y sumatorias de área neta y tapacanto.
+     b) **Alertas Mecánicas:** lista destacada con pieza, luz libre y recomendación ante pandeo > 850 mm.
+     c) **Matrices `n×3` y `n×5`:** transición clara al activar fondo 3 mm + botón **"Exportar CSV"**
+        con BOM UTF-8 (`\uFEFF`).
+     d) **Plano de Corte 2D:** conteo separado (18 mm vs 3 mm), `% uso` / `% desperdicio`, aviso si hay
+        `unplacedPieces`, previsualización de `cuttingPlan.svgMarkup` y botón **"Descargar SVG"**.
+
+3. Construye `src/App.tsx` y estilos CSS 100% locales:
+   - Cabecera SmartFurniture, barra de **3 Presets oficiales** (Estantería, Rack TV, Clóset) y controles
+     sincronizados:
+     * Sliders + inputs `V_f` (`x_f`: 300–2400, `y_f`: 300–2400, `z_f`: 200–800 mm) y presets rápidos de profundidad.
+     * Número de repisas equidistantes `N` (0–8) y botón *"Agregar/Quitar divisor vertical central"*.
+     * Fondo Durolac 3 mm, encuentro en esquinas (`topOverSides`/`topBetweenSides`), tapacanto
+       (`fullPerimeter`/`visibleEdgesOnly`), sentido de veta (`respectGrain`), kerf (`3.2–4.0 mm`),
+       selector de formato de plancha (**Estándar 2440×1220** vs **Chile 2500×1830 + Durolac 2440×1520**),
+       estrategia (`Guillotina` vs `MaxRects`), margen de escuadrado (`trimMm`: 0 / 10 / 15 mm),
+       acabado 3D y slider Vista Explotada.
+   - Recálculo síncrono con `useMemo` de `calculateDespiece` y `generateCuttingPlan`.
+
+Verifica con Vitest + `tsc -b` + `vite build` (y grep sin URLs externas en `src/` e `index.html`).
+```
+
+--------------------------------------------------------------------------------
+PROMPT BLOQUE 4 — VectorCanvas Completo (Foto -> Visión -> 3D) e Integración Final
+--------------------------------------------------------------------------------
+```text
+Implementa `src/components/vectorCanvas/VectorCanvas.tsx` conectando `src/core/vision/` y
+`src/core/mathEngine/homography.ts`, e intégralo como Paso 1 y Paso 2 del flujo de 4 pasos en
+`src/App.tsx` (100% offline, sin romper Bloques 1, 2, Visión ni 3).
+
+1. Carga local de imágenes y protocolo (Paso 1):
+   - Carga local de **Vista Frontal (XY)** con `<input type="file" accept="image/*" />` usando
+     `URL.createObjectURL` + limpieza `URL.revokeObjectURL`.
+   - Muestra una tarjeta breve colapsable con el **Protocolo de Foto** (mueble abierto, centro y media altura,
+     >= 3 m, zoom 1×–2×, nunca 0.5×, sin recortar, WhatsApp como Documento).
+   - Botón **"Cargar croquis de ejemplo local"** que genera proceduralmente en canvas una imagen sintética
+     en perspectiva leve con hoja A4 de referencia visible.
+   - Selector de profundidad: presets rápidos (`320 / 400 / 500 / 550 mm`) + **pestaña opcional "Vista Lateral (ZY)"**
+     que permite cargar una 2ª foto con marco de 4 puntos para sincronizar `aspectRatioZY` y `targetDimensions.z`.
+   - Interruptor sincronizado *"¿Incluye fondo Durolac 3 mm?"*.
+
+2. Lienzo HTML5 interactivo con Homografía, Lupa 4× y Auto-detección (Paso 2):
+   - 4 nodos arrastrables (`TL, TR, BR, BL`) con **Lupa 4×** al arrastrar y grilla proyectiva vía `toCanvas`
+     (con aviso limpio si el cuadrilátero es degenerado).
+   - Miniatura en vivo de la **imagen rectificada** (`rectifyImageRGBA`) para confirmar el encuadre recto.
+   - Selector de lente (`1× · 26 mm` por defecto / `2× · 52 mm`) para prellenar `aspectRatioXY` con
+     `estimateAspectRatioFixedFocal`.
+   - Botón **"Detectar estructura automáticamente"**: ejecuta `analyzeRectifiedFurniture`, dibuja los
+     divisores y repisas detectados en perspectiva sobre la foto vía `toCanvas`, muestra un badge de
+     confianza (`Alta / Media / Baja — trazar a mano`) y sincroniza el Visor 3D en tiempo real.
+   - Botón opcional **"Muestrear color (gotero 1 clic)"**: al tocar cualquier canto de melamina en la foto,
+     pasa `seedPoint` al detector y recalcula al instante.
+   - **Edición manual garantizada (vanos mixtos):** modos *Divisor Vertical* y *Repisa Horizontal* para
+     agregar, arrastrar o borrar líneas con snap automático (`±0.03`) a bordes exteriores (`0, 1`) y divisores
+     existentes, convirtiendo coordenadas exteriores de clic/arrastre con `exteriorToInterior()`.
+
+3. Calibración métrica A4 invariante a perspectiva:
+   - Permite marcar un segmento `[p1, p2]` (botón rápido **"Hoja A4 = 297 mm"** o medida manual).
+   - Proyecta `[p1, p2]` con `toUnit`, calcula `dRect = hypot(du * aspectRatioXY, dv)`, `yCal = medidaMm / dRect`,
+     `xCal = yCal * aspectRatioXY` (fallback euclidiano solo si `toUnit` es nulo) y ofrece botón
+     **"Aplicar calibración a V₀ y V_f"**.
+
+4. Integración final en `src/App.tsx` y verificación:
+   - Navegación fluida entre los 4 pasos + vista dividida opcional Foto ↔ 3D en pantallas anchas + acceso
+     rápido a los 3 Presets.
+   - Ejecuta la compuerta final:
+     `vitest` 100% verde + `tsc -b` + `vite build` sin errores + `grep` sin URLs externas en `src/` e `index.html`.
+   - Verifica en navegador de escritorio con DevTools -> Network -> Offline.
+```

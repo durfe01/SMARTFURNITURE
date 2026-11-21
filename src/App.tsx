@@ -1,0 +1,556 @@
+/**
+ * SMARTFURNITURE v3.0 — APLICACIÓN PRINCIPAL 100% LOCAL Y OFFLINE
+ * Flujo de 4 pasos + 3 Presets oficiales + Vista Dividida Foto <-> 3D + Exportación Excel/CSV/SVG.
+ */
+import { useMemo, useState } from 'react';
+import type {
+  FurnitureTopology,
+  HardwareItem,
+  MelamineMaterial,
+  ScaleAndBoardParams,
+} from './types/contracts';
+import {
+  CHILE_DUROLAC_SHEET,
+  CHILE_MELAMINE_SHEET,
+  PRESETS,
+  calculateDespiece,
+  clonePreset,
+  type PresetKey,
+} from './core/mathEngine';
+import { generateCuttingPlan } from './core/cuttingStock';
+import { Viewer3D } from './components/viewer3d/Viewer3D';
+import { MathPanel } from './components/mathPanel/MathPanel';
+import { VectorCanvas } from './components/vectorCanvas/VectorCanvas';
+
+type ActiveStep = 'foto' | 'split' | '3d';
+type SheetStandard = 'pauta' | 'chile';
+
+export default function App() {
+  const initial = useMemo(() => clonePreset('estanteria'), []);
+  const [activePreset, setActivePreset] = useState<PresetKey | null>('estanteria');
+  const [topology, setTopology] = useState<FurnitureTopology>(initial.topology);
+  const [params, setParams] = useState<ScaleAndBoardParams>(initial.params);
+  const [explodeFactor, setExplodeFactor] = useState<number>(0);
+  const [sheetStandard, setSheetStandard] = useState<SheetStandard>('pauta');
+  const [activeStep, setActiveStep] = useState<ActiveStep>('3d');
+
+  const despiece = useMemo(
+    () => calculateDespiece(topology, params),
+    [topology, params],
+  );
+
+  const cuttingPlan = useMemo(
+    () => generateCuttingPlan(despiece.matrizDespiece, params),
+    [despiece.matrizDespiece, params],
+  );
+
+  const handleLoadPreset = (key: PresetKey) => {
+    const cloned = clonePreset(key);
+    if (sheetStandard === 'chile') {
+      cloned.params.sheetDimensions = { ...CHILE_MELAMINE_SHEET };
+      cloned.params.backPanelSheetDimensions = { ...CHILE_DUROLAC_SHEET };
+    }
+    setActivePreset(key);
+    setTopology(cloned.topology);
+    setParams(cloned.params);
+    setExplodeFactor(0);
+  };
+
+  const handleSheetStandardChange = (std: SheetStandard) => {
+    setSheetStandard(std);
+    setParams((prev) => ({
+      ...prev,
+      sheetDimensions: std === 'chile' ? { ...CHILE_MELAMINE_SHEET } : { width: 2440, height: 1220 },
+      backPanelSheetDimensions: std === 'chile' ? { ...CHILE_DUROLAC_SHEET } : undefined,
+    }));
+  };
+
+  const updateTargetDim = (axis: 'x' | 'y' | 'z', value: number) => {
+    const clamped =
+      axis === 'z'
+        ? Math.max(200, Math.min(800, value))
+        : Math.max(300, Math.min(2400, value));
+    setParams((prev) => ({
+      ...prev,
+      targetDimensions: { ...prev.targetDimensions, [axis]: clamped },
+    }));
+  };
+
+  const handleToggleCenterDivider = () => {
+    setTopology((prev) => {
+      const hasCenter = prev.vDividers.some((d) => Math.abs(d.position - 0.5) < 0.03);
+      if (hasCenter) {
+        return {
+          ...prev,
+          vDividers: prev.vDividers.filter((d) => Math.abs(d.position - 0.5) >= 0.03),
+        };
+      }
+      return {
+        ...prev,
+        vDividers: [
+          ...prev.vDividers,
+          { id: 'div_central_rapido', position: 0.5, start: 0, end: 1 },
+        ],
+      };
+    });
+  };
+
+  const handleToggleExternalLegs = (checked: boolean, heightMm?: number, count?: number) => {
+    setTopology((prev) => ({
+      ...prev,
+      hasExternalLegs: checked,
+      externalLegHeightMm: heightMm ?? prev.externalLegHeightMm ?? 150,
+      externalLegCount: count ?? prev.externalLegCount ?? 4,
+    }));
+  };
+
+  const handleAddHardwareItem = (item: HardwareItem) => {
+    setTopology((prev) => ({
+      ...prev,
+      hardwareItems: [...(prev.hardwareItems ?? []), item],
+    }));
+  };
+
+  const handleRemoveHardwareItem = (id: string) => {
+    setTopology((prev) => ({
+      ...prev,
+      hardwareItems: (prev.hardwareItems ?? []).filter((h) => h.id !== id),
+    }));
+  };
+
+  const hasCenterDivider = topology.vDividers.some((d) => Math.abs(d.position - 0.5) < 0.03);
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div>
+          <div className="brand-title">SmartFurniture v3.0 — Diseño Paramétrico &amp; Corte 2D</div>
+          <div className="brand-sub">
+            100% Local Offline · INACAP Funciones y Matrices (Unidad 3) · Melamina {params.boardThickness} mm + Herrajes
+          </div>
+        </div>
+        <div className="preset-bar">
+          {(Object.keys(PRESETS) as PresetKey[]).map((k) => (
+            <button
+              key={k}
+              type="button"
+              className={activePreset === k ? 'preset-btn active' : 'preset-btn'}
+              onClick={() => handleLoadPreset(k)}
+            >
+              {PRESETS[k].label}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      <nav className="stepper-bar">
+        <div className="step-group">
+          <button
+            type="button"
+            className={activeStep === 'foto' ? 'step-btn active' : 'step-btn'}
+            onClick={() => setActiveStep('foto')}
+          >
+            1–2. Foto, Homografía y Visión
+          </button>
+          <button
+            type="button"
+            className={activeStep === 'split' ? 'step-btn active' : 'step-btn'}
+            onClick={() => setActiveStep('split')}
+          >
+            Vista Dividida (Foto ↔ 3D en Vivo)
+          </button>
+          <button
+            type="button"
+            className={activeStep === '3d' ? 'step-btn active' : 'step-btn'}
+            onClick={() => setActiveStep('3d')}
+          >
+            3–4. Visor 3D, Unidad 3 y Plano de Corte
+          </button>
+        </div>
+        <span className="small-note muted">
+          Cuerpo: {params.targetDimensions.x}×{params.targetDimensions.y}×{params.targetDimensions.z} mm ·{' '}
+          {cuttingPlan.totalSheetsCount} plancha(s) ({cuttingPlan.usagePercentage.toFixed(1)}% uso)
+        </span>
+      </nav>
+
+      <div className="workspace-grid">
+        {/* PANEL LATERAL DE PARÁMETROS */}
+        <aside className="sidebar-controls">
+          <div className="control-group">
+            <h3>Dimensiones Cuerpo V_f (mm)</h3>
+            <div className="slider-row">
+              <div className="slider-head">
+                <label>Ancho X</label>
+                <input
+                  type="number"
+                  min={300}
+                  max={2400}
+                  value={params.targetDimensions.x}
+                  onChange={(e) => updateTargetDim('x', Number(e.target.value) || 300)}
+                />
+              </div>
+              <input
+                type="range"
+                min={300}
+                max={2400}
+                step={10}
+                value={params.targetDimensions.x}
+                onChange={(e) => updateTargetDim('x', Number(e.target.value))}
+              />
+            </div>
+
+            <div className="slider-row">
+              <div className="slider-head">
+                <label>Alto Y (cuerpo melamina)</label>
+                <input
+                  type="number"
+                  min={300}
+                  max={2400}
+                  value={params.targetDimensions.y}
+                  onChange={(e) => updateTargetDim('y', Number(e.target.value) || 300)}
+                />
+              </div>
+              <input
+                type="range"
+                min={300}
+                max={2400}
+                step={10}
+                value={params.targetDimensions.y}
+                onChange={(e) => updateTargetDim('y', Number(e.target.value))}
+              />
+            </div>
+
+            <div className="slider-row">
+              <div className="slider-head">
+                <label>Profundidad Z</label>
+                <input
+                  type="number"
+                  min={200}
+                  max={800}
+                  value={params.targetDimensions.z}
+                  onChange={(e) => updateTargetDim('z', Number(e.target.value) || 200)}
+                />
+              </div>
+              <input
+                type="range"
+                min={200}
+                max={800}
+                step={10}
+                value={params.targetDimensions.z}
+                onChange={(e) => updateTargetDim('z', Number(e.target.value))}
+              />
+              <div className="chip-row">
+                {[320, 400, 500, 550].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={params.targetDimensions.z === d ? 'chip-btn active' : 'chip-btn'}
+                    onClick={() => updateTargetDim('z', d)}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="control-group">
+            <h3>Estructura Interna y Patas</h3>
+            {topology.shelfMode === 'equidistant' && (
+              <div className="slider-row">
+                <div className="slider-head">
+                  <label>Repisas equidistantes (N)</label>
+                  <strong>{topology.equalShelfCount}</strong>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={8}
+                  value={topology.equalShelfCount}
+                  onChange={(e) =>
+                    setTopology((prev) => ({
+                      ...prev,
+                      equalShelfCount: Number(e.target.value),
+                    }))
+                  }
+                />
+              </div>
+            )}
+
+            <button type="button" className="btn-secondary" onClick={handleToggleCenterDivider}>
+              {hasCenterDivider ? 'Quitar divisor vertical central' : '+ Agregar divisor vertical central'}
+            </button>
+
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={topology.hasBackPanel}
+                onChange={(e) =>
+                  setTopology((prev) => ({ ...prev, hasBackPanel: e.target.checked }))
+                }
+              />
+              Incluir Fondo Durolac 3 mm (n×3 → n×5)
+            </label>
+
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={Boolean(topology.hasExternalLegs)}
+                onChange={(e) => handleToggleExternalLegs(e.target.checked)}
+              />
+              Patas externas independientes (no melamina)
+            </label>
+            {topology.hasExternalLegs && (
+              <div className="chip-row">
+                <label className="small-note">
+                  Alto patas (mm):
+                  <input
+                    type="number"
+                    min={40}
+                    max={400}
+                    value={topology.externalLegHeightMm ?? 150}
+                    onChange={(e) =>
+                      handleToggleExternalLegs(true, Number(e.target.value) || 150, topology.externalLegCount)
+                    }
+                    style={{ width: 64, marginLeft: 4 }}
+                  />
+                </label>
+                <label className="small-note">
+                  Cant:
+                  <input
+                    type="number"
+                    min={2}
+                    max={12}
+                    value={topology.externalLegCount ?? 4}
+                    onChange={(e) =>
+                      handleToggleExternalLegs(true, topology.externalLegHeightMm, Number(e.target.value) || 4)
+                    }
+                    style={{ width: 48, marginLeft: 4 }}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+
+          <div className="control-group">
+            <h3>Carpintería y Sierra</h3>
+            <label className="small-note">
+              Formato de plancha:
+              <select
+                className="select-input"
+                value={sheetStandard}
+                onChange={(e) => handleSheetStandardChange(e.target.value as SheetStandard)}
+              >
+                <option value="pauta">Estándar Pauta (2440×1220 mm)</option>
+                <option value="chile">Chile (2500×1830 + Durolac 2440×1520)</option>
+              </select>
+            </label>
+
+            <label className="small-note">
+              Encuentro en esquinas:
+              <select
+                className="select-input"
+                value={params.cornerJointType}
+                onChange={(e) =>
+                  setParams((p) => ({
+                    ...p,
+                    cornerJointType: e.target.value as ScaleAndBoardParams['cornerJointType'],
+                  }))
+                }
+              >
+                <option value="topOverSides">Cubierta sobre laterales (topOverSides)</option>
+                <option value="topBetweenSides">Cubierta entre laterales (topBetweenSides)</option>
+              </select>
+            </label>
+
+            <label className="small-note">
+              Tapacanto:
+              <select
+                className="select-input"
+                value={params.edgeBandingMode}
+                onChange={(e) =>
+                  setParams((p) => ({
+                    ...p,
+                    edgeBandingMode: e.target.value as ScaleAndBoardParams['edgeBandingMode'],
+                  }))
+                }
+              >
+                <option value="visibleEdgesOnly">Solo cantos vistos</option>
+                <option value="fullPerimeter">Perímetro completo</option>
+              </select>
+            </label>
+
+            <label className="small-note">
+              Estrategia de corte 2D:
+              <select
+                className="select-input"
+                value={params.packingStrategy ?? 'guillotine'}
+                onChange={(e) =>
+                  setParams((p) => ({
+                    ...p,
+                    packingStrategy: e.target.value as 'guillotine' | 'maxrects',
+                  }))
+                }
+              >
+                <option value="guillotine">Guillotina 2 etapas (Taller)</option>
+                <option value="maxrects">MaxRects BSSF (CNC)</option>
+              </select>
+            </label>
+
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={params.respectGrain}
+                onChange={(e) => setParams((p) => ({ ...p, respectGrain: e.target.checked }))}
+              />
+              Respetar sentido de veta (bloquea rotación 90°)
+            </label>
+
+            <div className="chip-row">
+              <label className="small-note">
+                Kerf (mm):
+                <select
+                  value={params.kerf}
+                  onChange={(e) => setParams((p) => ({ ...p, kerf: Number(e.target.value) }))}
+                  style={{ marginLeft: 4 }}
+                >
+                  <option value={3.2}>3.2</option>
+                  <option value={3.5}>3.5</option>
+                  <option value={4}>4.0</option>
+                </select>
+              </label>
+              <label className="small-note">
+                Trim (mm):
+                <select
+                  value={params.trimMm ?? 0}
+                  onChange={(e) => setParams((p) => ({ ...p, trimMm: Number(e.target.value) }))}
+                  style={{ marginLeft: 4 }}
+                >
+                  <option value={0}>0</option>
+                  <option value={10}>10</option>
+                  <option value={15}>15</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="control-group">
+            <h3>Acabado 3D y Vista Explotada</h3>
+            <div className="chip-row">
+              {(['blanco', 'roble', 'grafito'] as MelamineMaterial[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  className={params.material === m ? 'chip-btn active' : 'chip-btn'}
+                  onClick={() => setParams((p) => ({ ...p, material: m }))}
+                >
+                  {m === 'blanco' ? 'Blanco' : m === 'roble' ? 'Roble Claro' : 'Grafito'}
+                </button>
+              ))}
+            </div>
+            <div className="slider-row">
+              <div className="slider-head">
+                <label>Vista Explotada</label>
+                <strong>{Math.round(explodeFactor * 100)}%</strong>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={explodeFactor}
+                onChange={(e) => setExplodeFactor(Number(e.target.value))}
+              />
+            </div>
+          </div>
+        </aside>
+
+        {/* ESCENARIO CENTRAL */}
+        <main className="main-stage">
+          {activeStep === 'foto' && (
+            <VectorCanvas
+              topology={topology}
+              params={params}
+              onUpdateTopology={(next) => {
+                setActivePreset(null);
+                setTopology(next);
+              }}
+              onApplyCalibratedDims={(dims) => {
+                setParams((p) => ({
+                  ...p,
+                  referenceDimensions: { ...dims },
+                  targetDimensions: { ...dims },
+                }));
+              }}
+              onToggleBackPanel={(checked) =>
+                setTopology((prev) => ({ ...prev, hasBackPanel: checked }))
+              }
+              onToggleExternalLegs={handleToggleExternalLegs}
+              onAddHardwareItem={handleAddHardwareItem}
+              onSelectDepthMm={(z) => updateTargetDim('z', z)}
+            />
+          )}
+
+          {activeStep === 'split' && (
+            <div className="split-stage">
+              <VectorCanvas
+                topology={topology}
+                params={params}
+                onUpdateTopology={(next) => {
+                  setActivePreset(null);
+                  setTopology(next);
+                }}
+                onApplyCalibratedDims={(dims) => {
+                  setParams((p) => ({
+                    ...p,
+                    referenceDimensions: { ...dims },
+                    targetDimensions: { ...dims },
+                  }));
+                }}
+                onToggleBackPanel={(checked) =>
+                  setTopology((prev) => ({ ...prev, hasBackPanel: checked }))
+                }
+                onToggleExternalLegs={handleToggleExternalLegs}
+                onAddHardwareItem={handleAddHardwareItem}
+                onSelectDepthMm={(z) => updateTargetDim('z', z)}
+              />
+              <Viewer3D
+                despiece={despiece}
+                topology={topology}
+                params={params}
+                explodeFactor={explodeFactor}
+              />
+            </div>
+          )}
+
+          {activeStep === '3d' && (
+            <Viewer3D
+              despiece={despiece}
+              topology={topology}
+              params={params}
+              explodeFactor={explodeFactor}
+            />
+          )}
+
+          <MathPanel
+            despiece={despiece}
+            cuttingPlan={cuttingPlan}
+            topology={topology}
+            params={params}
+            onFixReferenceV0={() =>
+              setParams((p) => ({
+                ...p,
+                referenceDimensions: { ...p.targetDimensions },
+              }))
+            }
+            onAddCenterDivider={() => {
+              if (!hasCenterDivider) handleToggleCenterDivider();
+            }}
+            onAddHardwareItem={handleAddHardwareItem}
+            onRemoveHardwareItem={handleRemoveHardwareItem}
+          />
+        </main>
+      </div>
+    </div>
+  );
+}
