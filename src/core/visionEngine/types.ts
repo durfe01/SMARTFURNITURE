@@ -165,6 +165,7 @@ export interface VisionRecognitionReport {
   readonly autoZones: FrontZone[];
   readonly structuralShelves: NormalizedSegment[];
   readonly comparisonAudit: PhotoVectorComparisonAudit;
+  readonly detectedMaterial: 'blanco' | 'roble' | 'grafito';
   readonly strategyUsed: string;
   readonly modelId: string;
   readonly modelVersion: string;

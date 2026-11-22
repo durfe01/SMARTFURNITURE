@@ -48,6 +48,7 @@ interface VectorCanvasProps {
   despiece: DespieceResult;
   onUpdateTopology: (next: FurnitureTopology) => void;
   onApplyCalibratedDims: (dims: { x: number; y: number; z: number }) => void;
+  onApplyDetectedMaterial?: (material: 'blanco' | 'roble' | 'grafito') => void;
   onToggleBackPanel: (checked: boolean) => void;
   onToggleExternalLegs: (checked: boolean, heightMm?: number, count?: number) => void;
   onAddHardwareItem: (item: HardwareItem) => void;
@@ -174,6 +175,7 @@ export function VectorCanvas({
   despiece: _despiece,
   onUpdateTopology,
   onApplyCalibratedDims,
+  onApplyDetectedMaterial,
   onToggleBackPanel,
   onToggleExternalLegs,
   onAddHardwareItem,
@@ -397,8 +399,11 @@ export function VectorCanvas({
             : 'Ajustar 4 Esquinas';
     setDetectedModeLabel(modeText);
 
-    // Actualizar dimensiones de referencia V0 = Vf con la relación de aspecto real detectada
+    // Actualizar dimensiones de referencia V0 = Vf con la relación de aspecto real detectada y color del material
     onApplyCalibratedDims(syncedDims);
+    if (onApplyDetectedMaterial) {
+      onApplyDetectedMaterial(report.detectedMaterial);
+    }
 
     // SIEMPRE limpiar el preset anterior (`equalShelfCount: 0, shelfMode: 'custom'`)
     // para que jamás quede fantasma de la estantería inicial sobre una foto nueva

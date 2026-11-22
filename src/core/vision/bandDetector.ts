@@ -1021,20 +1021,70 @@ function detectHierarchicalStructure(
   }));
 
   const leafCells: LeafCellPx[] = [];
+  const bandVCutsList: Array<Array<{ x: number; u: number; score: number; half: 'top' | 'bot' | 'full'; hasStrongValley: boolean }>> = [];
+  const bandIsOpenMid: boolean[] = [];
+
+  for (let b = 0; b < yStops.length - 1; b++) {
+    const by0 = yStops[b];
+    const by1 = yStops[b + 1];
+    const isIntermediateBand = isMultiLevel && b > 0 && b < yStops.length - 2;
+    const fullVCuts = findVerticalCutsInBox(lum, c1, c2, maps, W, 0, W, by0, by1, isMultiLevel, refLum);
+    let vCuts: Array<{ x: number; u: number; score: number; half: 'top' | 'bot' | 'full'; hasStrongValley: boolean }> =
+      fullVCuts.map((v) => ({ ...v, half: 'full' as const }));
+    if (vCuts.length === 0 && isMultiLevel && by1 - by0 >= H * 0.25) {
+      vCuts = findPartialTJunctionVertical(maps, W, 0, W, by0, by1);
+    }
+
+    // Si es una banda intermedia (entre módulo aéreo superior y mesón inferior) y tiene un único
+    // corte vertical lateral (u > 0.68 o u < 0.26) donde el vano central es fondo blanco puro pasante (>55%),
+    // ese corte es la pared lateral vista en perspectiva 3/4 a través del nicho abierto -> eliminarlo.
+    let isPassThroughOpen = false;
+    if (isIntermediateBand && vCuts.length === 1 && (vCuts[0].u > 0.68 || vCuts[0].u < 0.26)) {
+      const cx0 = vCuts[0].u > 0.5 ? Math.round(W * 0.12) : vCuts[0].x + 8;
+      const cx1 = vCuts[0].u > 0.5 ? vCuts[0].x - 8 : Math.round(W * 0.88);
+      if (cx1 > cx0 + 20) {
+        const cavStats = computeBoxStats(lum, c1, c2, W, cx0, cx1, by0, by1);
+        if (cavStats.brightWhiteRatio > 0.52) {
+          vCuts = [];
+          isPassThroughOpen = true;
+        }
+      }
+    }
+    bandVCutsList.push(vCuts);
+    bandIsOpenMid.push(isPassThroughOpen);
+  }
+
+  // Propagación de columna en mueble blanco multinivel: si la alacena superior (b=0) tiene 2 divisores (3 puertas)
+  // y el mueble bajo (b=yStops.length-2) solo detectó 1 divisor (ej. el derecho en u~0.67) perdiendo el izquierdo
+  // por bajo contraste entre puertas blancas, recuperar el divisor alineado con la columna superior.
+  if (yStops.length >= 3 && refLum >= 195) {
+    const topCuts = bandVCutsList[0];
+    const botIdx = yStops.length - 2;
+    const botCuts = bandVCutsList[botIdx];
+    if (topCuts.length === 2 && botCuts.length === 1) {
+      const missingTop =
+        Math.abs(botCuts[0].u - topCuts[1].u) < Math.abs(botCuts[0].u - topCuts[0].u)
+          ? topCuts[0]
+          : topCuts[1];
+      if (Math.abs(botCuts[0].u - missingTop.u) >= 0.18) {
+        botCuts.push({
+          x: missingTop.x,
+          u: missingTop.u,
+          score: 12,
+          half: 'full',
+          hasStrongValley: true,
+        });
+        botCuts.sort((a, b) => a.x - b.x);
+      }
+    }
+  }
 
   for (let b = 0; b < yStops.length - 1; b++) {
     const by0 = yStops[b];
     const by1 = yStops[b + 1];
     const v0Band = 1 - by1 / H;
     const v1Band = 1 - by0 / H;
-
-    const fullVCuts = findVerticalCutsInBox(lum, c1, c2, maps, W, 0, W, by0, by1, isMultiLevel, refLum);
-    let vCuts: Array<{ x: number; u: number; score: number; half: 'top' | 'bot' | 'full'; hasStrongValley: boolean }> =
-      fullVCuts.map((v) => ({ ...v, half: 'full' as const }));
-    // Si una banda principal no tuvo divisor vertical de punta a punta, probar unión en T (T-junction)
-    if (vCuts.length === 0 && isMultiLevel && by1 - by0 >= H * 0.25) {
-      vCuts = findPartialTJunctionVertical(maps, W, 0, W, by0, by1);
-    }
+    const vCuts = bandVCutsList[b];
     const xStops = [0, ...vCuts.map((v) => v.x).sort((a, b) => a - b), W];
 
     for (const vc of vCuts) {
@@ -1046,7 +1096,8 @@ function detectHierarchicalStructure(
       vLinesPx.push({ x: vc.x, y0: by0, y1: by1 });
     }
 
-    const isMiddleOpenBand = isMultiLevel && b > 0 && b < yStops.length - 2 && vCuts.length === 0;
+    const isMiddleOpenBand =
+      bandIsOpenMid[b] || (isMultiLevel && b > 0 && b < yStops.length - 2 && vCuts.length === 0);
 
     for (let c = 0; c < xStops.length - 1; c++) {
       const cx0 = xStops[c];

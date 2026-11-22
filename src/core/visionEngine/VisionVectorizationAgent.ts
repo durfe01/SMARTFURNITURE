@@ -106,11 +106,14 @@ export class VisionVectorizationAgent {
     }
 
     // Refinar clasificación semántica de cada celda con el VisionModel entrenado
-    // respetando los conteos de cajones y sentidos de apertura detectados por tiradores
+    // respetando los conteos de cajones, nichos abiertos, huecos de piernas y vitrinas detectados geométricamente
     const refinedZones: FrontZone[] = det.detectedZones.map((zone, idx) => {
-      // Conservar zonas de cajón ya particionadas explícitamente y nichos abiertos claros de modo 'open'
       if (det.furnitureMode === 'open') return { ...zone };
       if (zone.kind === 'drawers' && (zone.drawerCount ?? 0) >= 1) return { ...zone };
+      // JAMÁS convertir un nicho central abierto, vitrina o hueco de piernas en una puerta cerrada
+      if (zone.kind === 'open' || zone.kind === 'leg_void' || zone.kind === 'door_glass') {
+        return { ...zone };
+      }
 
       const isMiddle =
         zone.uStart <= 0.04 && zone.uEnd >= 0.96 && zone.vStart >= 0.15 && zone.vEnd <= 0.85;
@@ -123,23 +126,16 @@ export class VisionVectorizationAgent {
       );
       const pred = this.model.predictCell(feat);
 
-      // Aplicar la predicción del modelo entrenado cuando tiene confianza sólida (>= 0.58)
-      if (pred.confidence >= 0.58) {
-        if (pred.kind === 'leg_void') {
+      // Aplicar la predicción del modelo entrenado cuando tiene confianza sólida (>= 0.62)
+      if (pred.confidence >= 0.62) {
+        if (pred.kind === 'leg_void' && det.refLum < 200) {
           return { ...zone, kind: 'leg_void', label: 'Hueco Piernas' };
         }
         if (pred.kind === 'door_glass') {
           return { ...zone, kind: 'door_glass', label: `Vitrina ${idx + 1}` };
         }
-        if (pred.kind === 'open') {
-          return { ...zone, kind: 'open', label: isMiddle ? 'Nicho / Mesón' : `Nicho ${idx + 1}` };
-        }
-        if (pred.kind === 'door' && (zone.kind === 'open' || zone.kind === 'leg_void')) {
-          return {
-            ...zone,
-            kind: idx % 2 === 0 ? 'door_left' : 'door_right',
-            label: `Puerta ${idx + 1}`,
-          };
+        if (pred.kind === 'open' && isMiddle) {
+          return { ...zone, kind: 'open', label: 'Nicho / Mesón' };
         }
       }
       return { ...zone };
@@ -573,6 +569,45 @@ export class VisionVectorizationAgent {
   }
 
   /**
+   * Infiere el acabado de melamina (`blanco`, `roble` o `grafito`) a partir de la fotometría real
+   * de la imagen rectificada para que el modelo 3D coincida con el color del mueble fotografiado.
+   */
+  public inferMaterialFromFrame(
+    rectifiedFrame: ImageFrameRGBA,
+    refLum: number,
+  ): 'blanco' | 'roble' | 'grafito' {
+    const { rgba, width, height } = rectifiedFrame;
+    const step = Math.max(2, Math.floor((width * height) / 1600));
+    let sumWarmth = 0;
+    let sumChroma = 0;
+    let count = 0;
+
+    for (let i = 0; i < width * height; i += step) {
+      const idx = i * 4;
+      const r = rgba[idx];
+      const g = rgba[idx + 1];
+      const b = rgba[idx + 2];
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      // Excluir fondo blanco quemado (>246) y sombras negras profundas (<35)
+      if (lum > 246 || lum < 35) continue;
+      sumWarmth += r - b;
+      sumChroma += (Math.abs(r - g) + Math.abs(g - b) + Math.abs(r - b)) / (3 * 255);
+      count++;
+    }
+
+    const meanWarmth = count > 0 ? sumWarmth / count : 0;
+    const meanChroma = count > 0 ? sumChroma / count : 0;
+
+    if (refLum >= 182 && meanChroma < 0.068 && meanWarmth < 24) {
+      return 'blanco';
+    }
+    if (refLum <= 98 && meanChroma < 0.075 && meanWarmth < 22) {
+      return 'grafito';
+    }
+    return 'roble';
+  }
+
+  /**
    * Pipeline completo POO de fotografía cruda -> Homografía -> Rectificación -> Reconocimiento
    * + Clasificación aprendida (VisionModel) + Bucle de Comparación y Auto-Corrección Foto ↔ Vector V₀
    * + Detección de patas externas.
@@ -613,6 +648,10 @@ export class VisionVectorizationAgent {
       dimsMm,
       boardThicknessMm,
     );
+    const detectedMaterial = this.inferMaterialFromFrame(
+      rectRes.rectified,
+      refined.refinedDetection.refLum,
+    );
 
     return {
       detection: refined.refinedDetection,
@@ -626,6 +665,7 @@ export class VisionVectorizationAgent {
       autoZones: refined.autoZones,
       structuralShelves: refined.structuralShelves,
       comparisonAudit: refined.comparisonAudit,
+      detectedMaterial,
       strategyUsed: this.strategy.name,
       modelId: this.model.id,
       modelVersion: this.model.version,

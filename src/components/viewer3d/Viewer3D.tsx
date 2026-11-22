@@ -214,17 +214,40 @@ function FurnitureMeshGroup({
                 )}
                 <Edges color={sev ? '#7f1d1d' : isDoor || isDrawerFront ? '#0f172a' : edgeLineColor} />
               </mesh>
-              {/* Tirador metálico 3D sobre puertas y frentes de cajón para lectura visual inmediata */}
-              {isDoor && (
-                <mesh position={[dx / 2000 - 0.035, 0, dz / 2000 + 0.012]} castShadow>
-                  <boxGeometry args={[0.012, Math.min(0.14, (dy / 1000) * 0.25), 0.018]} />
-                  <meshStandardMaterial color="#1e293b" metalness={0.75} roughness={0.25} />
-                </mesh>
-              )}
+              {/* Tirador metálico 3D sobre puertas y frentes de cajón (orientación y altura coherentes con muebles multinivel y simples) */}
+              {isDoor && (() => {
+                const pyMm = piece.posicion3D[1];
+                const isUpperAerialDoor = pyMm - dy / 2 >= yf * 0.52 && dy <= yf * 0.52;
+                const isLowerBaseDoor = pyMm + dy / 2 <= yf * 0.56 && dy <= yf * 0.58 && topology.hShelves.length >= 1;
+                if (isUpperAerialDoor) {
+                  // Puerta aérea superior (ej. alacena cocina): tirador horizontal en borde inferior
+                  return (
+                    <mesh position={[0, -dy / 2000 + Math.min(0.042, (dy / 1000) * 0.12), dz / 2000 + 0.012]} castShadow>
+                      <boxGeometry args={[Math.min(0.22, (dx / 1000) * 0.55), 0.012, 0.018]} />
+                      <meshStandardMaterial color="#64748b" metalness={0.75} roughness={0.25} />
+                    </mesh>
+                  );
+                }
+                if (isLowerBaseDoor) {
+                  // Puerta inferior bajo mesón: tirador horizontal en borde superior
+                  return (
+                    <mesh position={[0, dy / 2000 - Math.min(0.042, (dy / 1000) * 0.12), dz / 2000 + 0.012]} castShadow>
+                      <boxGeometry args={[Math.min(0.22, (dx / 1000) * 0.55), 0.012, 0.018]} />
+                      <meshStandardMaterial color="#64748b" metalness={0.75} roughness={0.25} />
+                    </mesh>
+                  );
+                }
+                return (
+                  <mesh position={[dx / 2000 - 0.035, 0, dz / 2000 + 0.012]} castShadow>
+                    <boxGeometry args={[0.012, Math.min(0.14, (dy / 1000) * 0.25), 0.018]} />
+                    <meshStandardMaterial color="#475569" metalness={0.75} roughness={0.25} />
+                  </mesh>
+                );
+              })()}
               {isDrawerFront && (
                 <mesh position={[0, 0, dz / 2000 + 0.012]} castShadow>
-                  <boxGeometry args={[Math.min(0.16, (dx / 1000) * 0.32), 0.012, 0.018]} />
-                  <meshStandardMaterial color="#1e293b" metalness={0.75} roughness={0.25} />
+                  <boxGeometry args={[Math.min(0.22, (dx / 1000) * 0.55), 0.012, 0.018]} />
+                  <meshStandardMaterial color="#64748b" metalness={0.75} roughness={0.25} />
                 </mesh>
               )}
             </group>

@@ -696,6 +696,9 @@ export default function App() {
                   targetDimensions: { ...dims },
                 }));
               }}
+              onApplyDetectedMaterial={(mat) => {
+                setParams((p) => ({ ...p, material: mat }));
+              }}
               onToggleBackPanel={(checked) =>
                 setTopology((prev) => ({ ...prev, hasBackPanel: checked }))
               }

@@ -253,6 +253,38 @@ export class PerspectiveRectifier {
       bodyMaxY--;
     }
 
+    // 4.5. Si el mueble fue fotografiado en perspectiva 3/4 con un nicho central pasante (fondo blanco visible
+    // en la franja media y=[30%..55%]), recortar el costado lateral 3/4 para encuadrar solo el plano frontal
+    const midY0 = minY + Math.round(boxH * 0.32);
+    const midY1 = minY + Math.round(boxH * 0.52);
+    if (midY1 > midY0 + 10 && boxW >= W * 0.45) {
+      let cavLeft = -1;
+      let cavRight = -1;
+      const midSpanH = midY1 - midY0;
+      for (let x = minX + Math.round(boxW * 0.05); x <= maxX - Math.round(boxW * 0.05); x++) {
+        let bgHits = 0;
+        for (let y = midY0; y < midY1; y++) {
+          if (fgMask[y * W + x] === 0) bgHits++;
+        }
+        if (bgHits / midSpanH >= 0.65) {
+          if (cavLeft === -1) cavLeft = x;
+          cavRight = x;
+        }
+      }
+      if (cavLeft !== -1 && cavRight !== -1 && cavRight - cavLeft >= boxW * 0.48) {
+        const leftWallW = cavLeft - minX;
+        const rightWallW = maxX - cavRight;
+        // Si el pilar/costado izquierdo es mucho más ancho que el espesor frontal derecho, el excedente es el lateral 3/4
+        if (leftWallW >= boxW * 0.095 && leftWallW > rightWallW * 1.45) {
+          const frontBorderAllowance = Math.max(8, Math.min(rightWallW, Math.round(boxW * 0.028)));
+          minX = Math.max(minX, cavLeft - frontBorderAllowance);
+        } else if (rightWallW >= boxW * 0.095 && rightWallW > leftWallW * 1.45) {
+          const frontBorderAllowance = Math.max(8, Math.min(leftWallW, Math.round(boxW * 0.028)));
+          maxX = Math.min(maxX, cavRight + frontBorderAllowance);
+        }
+      }
+    }
+
     // 5. Refinar altura de cada esquina (TL, TR, BR, BL) usando una ventana robusta
     const probeColY = (cx: number, fromTop: boolean): number => {
       const rx0 = Math.max(minX, cx - 5);
